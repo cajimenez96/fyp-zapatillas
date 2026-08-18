@@ -1,0 +1,120 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/db';
+import Promotion from '@/models/Promotion';
+
+export async function GET() {
+  try {
+    await connectToDatabase();
+    const promotions = await Promotion.find({}).sort({ order: 1, createdAt: -1 }).lean();
+    return NextResponse.json({ ok: true, data: promotions });
+  } catch (error) {
+    console.error('Error al consultar promociones en admin:', error);
+    return NextResponse.json(
+      { ok: false, error: 'INTERNAL_SERVER_ERROR', message: 'Error al consultar promociones' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    await connectToDatabase();
+    const { title, description, imageUrl, active, order } = await req.json();
+
+    if (!title || !title.trim() || !imageUrl || !imageUrl.trim()) {
+      return NextResponse.json(
+        { ok: false, error: 'BAD_REQUEST', message: 'Título e imagen son obligatorios' },
+        { status: 400 }
+      );
+    }
+
+    const newPromotion = await Promotion.create({
+      title: title.trim(),
+      description: description ? description.trim() : '',
+      imageUrl: imageUrl.trim(),
+      active: active !== undefined ? Boolean(active) : true,
+      order: typeof order === 'number' ? order : 0,
+    });
+
+    return NextResponse.json({ ok: true, data: newPromotion }, { status: 201 });
+  } catch (error) {
+    console.error('Error al crear promoción:', error);
+    return NextResponse.json(
+      { ok: false, error: 'INTERNAL_SERVER_ERROR', message: 'Error al crear promoción' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    await connectToDatabase();
+    const { id, title, description, imageUrl, active, order } = await req.json();
+
+    if (!id) {
+      return NextResponse.json(
+        { ok: false, error: 'BAD_REQUEST', message: 'El ID de la promoción es obligatorio' },
+        { status: 400 }
+      );
+    }
+
+    const updateData: Record<string, unknown> = {};
+    if (title !== undefined) updateData.title = title.trim();
+    if (description !== undefined) updateData.description = description.trim();
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl.trim();
+    if (active !== undefined) updateData.active = Boolean(active);
+    if (order !== undefined) updateData.order = Number(order);
+
+    const updated = await Promotion.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updated) {
+      return NextResponse.json(
+        { ok: false, error: 'NOT_FOUND', message: 'Promoción no encontrada' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ ok: true, data: updated });
+  } catch (error) {
+    console.error('Error al editar promoción:', error);
+    return NextResponse.json(
+      { ok: false, error: 'INTERNAL_SERVER_ERROR', message: 'Error al actualizar la promoción' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    await connectToDatabase();
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { ok: false, error: 'BAD_REQUEST', message: 'El ID de la promoción es obligatorio' },
+        { status: 400 }
+      );
+    }
+
+    const deleted = await Promotion.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return NextResponse.json(
+        { ok: false, error: 'NOT_FOUND', message: 'Promoción no encontrada' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ ok: true, message: 'Promoción eliminada correctamente' });
+  } catch (error) {
+    console.error('Error al eliminar promoción:', error);
+    return NextResponse.json(
+      { ok: false, error: 'INTERNAL_SERVER_ERROR', message: 'Error al eliminar promoción' },
+      { status: 500 }
+    );
+  }
+}

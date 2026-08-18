@@ -1,0 +1,270 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { X, ShoppingBag, Check, AlertCircle, ShieldCheck } from 'lucide-react';
+import { FormattedProduct } from './ProductCard';
+
+export interface CartItemAddPayload {
+  product: FormattedProduct;
+  size: number;
+  qty: number;
+}
+
+interface ProductDetailModalProps {
+  product: FormattedProduct | null;
+  onClose: () => void;
+  onAddToCart: (payload: CartItemAddPayload) => void;
+}
+
+export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
+  product,
+  onClose,
+  onAddToCart,
+}) => {
+  const [selectedImage, setSelectedImage] = useState<string>('');
+  const [selectedSize, setSelectedSize] = useState<number | null>(null);
+  const [quantity, setQuantity] = useState<number>(1);
+  const [addedSuccess, setAddedSuccess] = useState(false);
+
+  useEffect(() => {
+    if (product) {
+      const primaryUrl =
+        product.images.find((img) => img.isPrincipal)?.url ||
+        product.images[0]?.url ||
+        '';
+      setSelectedImage(primaryUrl);
+
+      // Auto select first size with stock > 0
+      const firstAvailable = product.sizesStock.find((s) => s.stock > 0);
+      if (firstAvailable) {
+        setSelectedSize(firstAvailable.size);
+      } else {
+        setSelectedSize(null);
+      }
+      setQuantity(1);
+      setAddedSuccess(false);
+    }
+  }, [product]);
+
+  if (!product) return null;
+
+  const brandName =
+    typeof product.brandId === 'object' && product.brandId !== null
+      ? product.brandId.name
+      : 'Calzado';
+
+  const typeName =
+    typeof product.typeId === 'object' && product.typeId !== null
+      ? product.typeId.name
+      : '';
+
+  // Get max stock for selected size
+  const currentSizeObj = product.sizesStock.find((s) => s.size === selectedSize);
+  const maxStock = currentSizeObj ? currentSizeObj.stock : 0;
+
+  const handleAddToCart = () => {
+    if (!selectedSize || maxStock === 0) return;
+    onAddToCart({
+      product,
+      size: selectedSize,
+      qty: quantity,
+    });
+    setAddedSuccess(true);
+    setTimeout(() => {
+      setAddedSuccess(false);
+      onClose();
+    }, 1200);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div
+        className="relative bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-none shadow-2xl border border-[#e5e5e5] p-6 sm:p-8 space-y-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2.5 text-[#111111] bg-[#f5f5f5] hover:bg-[#111111] hover:text-white rounded-full transition-colors z-10 cursor-pointer"
+          aria-label="Cerrar ventana"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Left: Image Gallery */}
+          <div className="space-y-4">
+            {/* Main Preview Image */}
+            <div className="relative aspect-square w-full bg-[#f5f5f5] overflow-hidden">
+              {selectedImage && (
+                <Image
+                  src={selectedImage}
+                  alt={product.name}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover object-center"
+                />
+              )}
+              {product.isOutOfStock && (
+                <div className="absolute top-4 left-4 bg-[#111111] text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 text-[#d30005]" /> SIN STOCK
+                </div>
+              )}
+            </div>
+
+            {/* Image Thumbnails Rail */}
+            {product.images.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {product.images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedImage(img.url)}
+                    className={`relative w-16 h-16 bg-[#f5f5f5] border-2 transition-all flex-shrink-0 cursor-pointer ${
+                      selectedImage === img.url
+                        ? 'border-[#111111]'
+                        : 'border-transparent opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <Image
+                      src={img.url}
+                      alt={`Vista ${idx + 1}`}
+                      fill
+                      sizes="64px"
+                      className="object-cover object-center"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Right: Product Metadata & Size Selector */}
+          <div className="flex flex-col justify-between space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-[#707072] uppercase tracking-wider">
+                <span>{brandName}</span>
+                {typeName && <span>• {typeName}</span>}
+                <span>• {product.gender}</span>
+              </div>
+
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#111111] uppercase tracking-tight leading-tight">
+                {product.name}
+              </h2>
+
+              <p className="text-2xl font-extrabold text-[#111111]">
+                ${product.price.toLocaleString('es-AR')}
+              </p>
+
+              <div className="border-t border-b border-[#f5f5f5] py-3">
+                <p className="text-xs text-[#707072] leading-relaxed">
+                  {product.description}
+                </p>
+              </div>
+
+              {/* Size Selector */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-xs font-extrabold text-[#111111] uppercase tracking-wider">
+                    Seleccionar Talle
+                  </label>
+                  {selectedSize && (
+                    <span className="text-xs text-[#707072]">
+                      Stock disponible:{' '}
+                      <strong className="text-[#111111]">{maxStock} pares</strong>
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-5 gap-2">
+                  {product.sizesStock.map((s) => {
+                    const hasStock = s.stock > 0;
+                    const isSelected = selectedSize === s.size;
+
+                    return (
+                      <button
+                        key={s.size}
+                        disabled={!hasStock}
+                        onClick={() => {
+                          setSelectedSize(s.size);
+                          setQuantity(1);
+                        }}
+                        className={`h-11 font-bold text-xs rounded-none border transition-all ${
+                          isSelected
+                            ? 'bg-[#111111] text-white border-[#111111] shadow-xs cursor-pointer'
+                            : hasStock
+                            ? 'bg-white text-[#111111] border-[#e5e5e5] hover:border-[#111111] cursor-pointer'
+                            : 'bg-[#f5f5f5] text-[#cacacb] border-transparent cursor-not-allowed line-through'
+                        }`}
+                      >
+                        {s.size}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Quantity Selector */}
+              {selectedSize && maxStock > 0 && (
+                <div className="flex items-center gap-4 pt-2">
+                  <label className="text-xs font-extrabold text-[#111111] uppercase tracking-wider">
+                    Cantidad:
+                  </label>
+                  <div className="flex items-center border border-[#e5e5e5]">
+                    <button
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                      disabled={quantity <= 1}
+                      className="px-3 py-1.5 text-sm font-bold text-[#111111] hover:bg-[#f5f5f5] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      -
+                    </button>
+                    <span className="px-4 text-xs font-bold text-[#111111]">
+                      {quantity}
+                    </span>
+                    <button
+                      onClick={() => setQuantity((q) => Math.min(maxStock, q + 1))}
+                      disabled={quantity >= maxStock}
+                      className="px-3 py-1.5 text-sm font-bold text-[#111111] hover:bg-[#f5f5f5] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Add to Cart CTA */}
+            <div className="space-y-3 pt-4 border-t border-[#f5f5f5]">
+              <button
+                onClick={handleAddToCart}
+                disabled={!selectedSize || maxStock === 0 || addedSuccess}
+                className={`w-full py-4 rounded-full font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md cursor-pointer ${
+                  addedSuccess
+                    ? 'bg-[#007d48] text-white cursor-default'
+                    : selectedSize && maxStock > 0
+                    ? 'bg-[#111111] hover:bg-black text-white cursor-pointer'
+                    : 'bg-[#f5f5f5] text-[#707072] cursor-not-allowed'
+                }`}
+              >
+                {addedSuccess ? (
+                  <>
+                    <Check className="w-5 h-5" /> ¡Agregado al Carrito!
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag className="w-5 h-5" /> Agregar al Carrito
+                  </>
+                )}
+              </button>
+
+              <div className="flex items-center justify-center gap-2 text-xs text-[#707072]">
+                <ShieldCheck className="w-4 h-4 text-[#007d48]" />
+                <span>Pedido respaldado por confirmación en WhatsApp</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

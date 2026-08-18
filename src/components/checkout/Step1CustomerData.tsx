@@ -1,0 +1,150 @@
+'use client';
+
+import React, { useState } from 'react';
+import { User, Phone, ArrowRight, ShieldCheck } from 'lucide-react';
+
+export interface CustomerFormData {
+  name: string;
+  lastName: string;
+  phone: string;
+}
+
+interface Step1CustomerDataProps {
+  initialData: CustomerFormData;
+  onSubmit: (data: CustomerFormData) => void;
+}
+
+export const Step1CustomerData: React.FC<Step1CustomerDataProps> = ({
+  initialData,
+  onSubmit,
+}) => {
+  const [formData, setFormData] = useState<CustomerFormData>(initialData);
+  const [errors, setErrors] = useState<{ name?: string; lastName?: string; phone?: string }>({});
+
+  const validate = () => {
+    const errs: { name?: string; lastName?: string; phone?: string } = {};
+
+    if (!formData.name.trim()) {
+      errs.name = 'El nombre es obligatorio';
+    }
+    if (!formData.lastName.trim()) {
+      errs.lastName = 'El apellido es obligatorio';
+    }
+    if (!formData.phone.trim()) {
+      errs.phone = 'El teléfono de WhatsApp es obligatorio';
+    } else if (formData.phone.trim().length < 6) {
+      errs.phone = 'Ingresá un número de teléfono válido';
+    }
+
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validate()) {
+      onSubmit(formData);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-1">
+        <h3 className="text-xl font-extrabold uppercase tracking-tight text-[#111111]">
+          Tus Datos de Contacto
+        </h3>
+        <p className="text-xs text-[#707072]">
+          Ingresá tus datos para enviarte la confirmación del pedido por WhatsApp.
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        {/* Nombre & Apellido */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-extrabold uppercase tracking-wider text-[#111111] mb-1.5">
+              Nombre *
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Ej: Carlos"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className={`w-full bg-[#f5f5f5] text-[#111111] text-sm font-medium py-3 pl-10 pr-4 rounded-none border focus:outline-none focus:ring-2 focus:ring-[#111111] ${
+                  errors.name ? 'border-[#d30005]' : 'border-[#e5e5e5]'
+                }`}
+              />
+              <User className="w-4 h-4 text-[#707072] absolute left-3.5 top-1/2 -translate-y-1/2" />
+            </div>
+            {errors.name && (
+              <p className="text-[11px] text-[#d30005] font-semibold mt-1">{errors.name}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-extrabold uppercase tracking-wider text-[#111111] mb-1.5">
+              Apellido *
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Ej: Jiménez"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                className={`w-full bg-[#f5f5f5] text-[#111111] text-sm font-medium py-3 pl-10 pr-4 rounded-none border focus:outline-none focus:ring-2 focus:ring-[#111111] ${
+                  errors.lastName ? 'border-[#d30005]' : 'border-[#e5e5e5]'
+                }`}
+              />
+              <User className="w-4 h-4 text-[#707072] absolute left-3.5 top-1/2 -translate-y-1/2" />
+            </div>
+            {errors.lastName && (
+              <p className="text-[11px] text-[#d30005] font-semibold mt-1">{errors.lastName}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Teléfono WhatsApp */}
+        <div>
+          <label className="block text-xs font-extrabold uppercase tracking-wider text-[#111111] mb-1.5">
+            Teléfono celular (WhatsApp) *
+          </label>
+          <div className="relative">
+            <input
+              type="tel"
+              placeholder="Ej: 3815218630 (sin 0 ni 15)"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              className={`w-full bg-[#f5f5f5] text-[#111111] text-sm font-medium py-3 pl-10 pr-4 rounded-none border focus:outline-none focus:ring-2 focus:ring-[#111111] ${
+                errors.phone ? 'border-[#d30005]' : 'border-[#e5e5e5]'
+              }`}
+            />
+            <Phone className="w-4 h-4 text-[#707072] absolute left-3.5 top-1/2 -translate-y-1/2" />
+          </div>
+          {errors.phone ? (
+            <p className="text-[11px] text-[#d30005] font-semibold mt-1">{errors.phone}</p>
+          ) : (
+            <p className="text-[11px] text-[#707072] mt-1">
+              Te servirá para enviar la orden y el comprobante directo por WhatsApp.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Security Callout */}
+      <div className="p-3 bg-[#f5f5f5] border border-[#e5e5e5] flex items-center gap-3 text-xs text-[#707072]">
+        <ShieldCheck className="w-5 h-5 text-[#007d48] flex-shrink-0" />
+        <span>Tus datos están protegidos. No requiere registro ni contraseña.</span>
+      </div>
+
+      {/* Action Button */}
+      <button
+        type="submit"
+        className="w-full py-4 bg-[#111111] hover:bg-black text-white font-bold text-sm uppercase tracking-wider rounded-full flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md"
+      >
+        <span>Continuar a Tu Pedido</span>
+        <ArrowRight className="w-4 h-4" />
+      </button>
+    </form>
+  );
+};

@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Presupuesto Oficial | FP Zapatillas E-Commerce</title>
+    <!-- Google Fonts: Inter & Bebas Neue for Nike Athletic Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* DESIGN.md Color Tokens & Typography */
+      :root {
+        --ink: #111111;
+        --canvas: #ffffff;
+        --soft-cloud: #f5f5f5;
+        --charcoal: #39393b;
+        --mute: #707072;
+        --hairline-soft: #e5e5e5;
+        --success: #007d48;
+        --sale: #d30005;
+        --font-display: "Bebas Neue", sans-serif;
+        --font-body: "Inter", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font-body);
+        background-color: var(--soft-cloud);
+        color: var(--ink);
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        padding: 40px 20px;
+      }
+
+      .document-container {
+        max-width: 900px;
+        margin: 0 auto;
+        background-color: var(--canvas);
+        border: 1px solid var(--hairline-soft);
+        padding: 50px 60px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      }
+
+      /* Print Controls Bar */
+      .actions-bar {
+        max-width: 900px;
+        margin: 0 auto 20px auto;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 24px;
+        border-radius: 9999px;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s ease;
+      }
+
+      .btn-primary {
+        background-color: var(--ink);
+        color: var(--canvas);
+      }
+
+      .btn-primary:hover {
+        background-color: #000000;
+        transform: translateY(-1px);
+      }
+
+      /* Header Section */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 2px solid var(--ink);
+        padding-bottom: 30px;
+        margin-bottom: 40px;
+      }
+
+      .brand-logo {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .brand-logo-text {
+        font-family: var(--font-display);
+        font-size: 42px;
+        line-height: 0.9;
+        letter-spacing: 1px;
+        color: var(--ink);
+        text-transform: uppercase;
+      }
+
+      .brand-subtitle {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 4px;
+        color: var(--mute);
+        text-transform: uppercase;
+        margin-top: 4px;
+      }
+
+      .document-meta {
+        text-align: right;
+      }
+
+      .doc-badge {
+        display: inline-block;
+        background-color: var(--ink);
+        color: var(--canvas);
+        font-size: 11px;
+        font-weight: 800;
+        padding: 4px 14px;
+        border-radius: 9999px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+      }
+
+      .meta-date {
+        font-size: 12px;
+        color: var(--mute);
+        font-weight: 500;
+      }
+
+      /* Client & Provider Grid */
+      .party-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        background-color: var(--soft-cloud);
+        padding: 24px;
+        border: 1px solid var(--hairline-soft);
+        margin-bottom: 40px;
+      }
+
+      .party-box h4 {
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--mute);
+        margin-bottom: 6px;
+      }
+
+      .party-box p {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .party-box span {
+        display: block;
+        font-size: 12px;
+        color: var(--mute);
+        font-weight: 500;
+        margin-top: 2px;
+      }
+
+      /* Section Titles */
+      .section-title {
+        font-family: var(--font-display);
+        font-size: 28px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        color: var(--ink);
+        border-bottom: 1px solid var(--hairline-soft);
+        padding-bottom: 8px;
+        margin-bottom: 20px;
+        margin-top: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      /* Scope Breakdown Cards */
+      .modules-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .module-card {
+        border: 1px solid var(--hairline-soft);
+        padding: 20px;
+        background-color: var(--canvas);
+        transition: border-color 0.2s;
+      }
+
+      .module-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .module-title {
+        font-size: 15px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--ink);
+      }
+
+      .module-tag {
+        background-color: var(--soft-cloud);
+        border: 1px solid var(--hairline-soft);
+        font-size: 10px;
+        font-weight: 800;
+        padding: 3px 10px;
+        border-radius: 9999px;
+        color: var(--ink);
+        text-transform: uppercase;
+      }
+
+      .module-features {
+        list-style: none;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 20px;
+      }
+
+      .module-features li {
+        font-size: 12px;
+        color: var(--charcoal);
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+      }
+
+      .module-features li::before {
+        content: "•";
+        color: var(--ink);
+        font-weight: bold;
+      }
+
+      /* Value Added Banner */
+      .value-banner {
+        background-color: #f0fbf5;
+        border: 1.5px solid var(--success);
+        padding: 20px 24px;
+        margin-top: 24px;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .value-icon {
+        font-size: 28px;
+      }
+
+      .value-text h4 {
+        font-size: 13px;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: var(--success);
+        letter-spacing: 0.5px;
+      }
+
+      .value-text p {
+        font-size: 12px;
+        color: var(--charcoal);
+        margin-top: 2px;
+      }
+
+      /* Pricing Section */
+      .pricing-box {
+        background-color: var(--ink);
+        color: var(--canvas);
+        padding: 30px;
+        margin-top: 40px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .pricing-info h3 {
+        font-family: var(--font-display);
+        font-size: 32px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+
+      .pricing-info p {
+        font-size: 12px;
+        color: #9e9ea0;
+        margin-top: 4px;
+      }
+
+      .pricing-amount {
+        text-align: right;
+      }
+
+      .price-value {
+        font-size: 38px;
+        font-weight: 900;
+        letter-spacing: -1px;
+        color: var(--canvas);
+      }
+
+      .price-sub {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #9e9ea0;
+        font-weight: 700;
+      }
+
+      /* Payment Terms Grid */
+      .payment-plans {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .plan-card {
+        border: 1px solid var(--hairline-soft);
+        padding: 20px;
+        background-color: var(--soft-cloud);
+      }
+
+      .plan-card.recommended {
+        border: 2px solid var(--ink);
+        background-color: var(--canvas);
+      }
+
+      .plan-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .plan-title {
+        font-size: 13px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .plan-badge {
+        background-color: var(--success);
+        color: var(--canvas);
+        font-size: 9px;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        text-transform: uppercase;
+      }
+
+      .plan-steps {
+        list-style: none;
+      }
+
+      .plan-steps li {
+        font-size: 12px;
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--hairline-soft);
+      }
+
+      .plan-steps li:last-child {
+        border-bottom: none;
+      }
+
+      .step-name {
+        color: var(--mute);
+        font-weight: 600;
+      }
+
+      .step-price {
+        font-weight: 800;
+        color: var(--ink);
+      }
+
+      /* Terms Footer */
+      .terms-box {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid var(--hairline-soft);
+        font-size: 11px;
+        color: var(--mute);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* Print Styles */
+      @media print {
+        body {
+          background-color: #ffffff;
+          padding: 0;
+        }
+        .actions-bar {
+          display: none;
+        }
+        .document-container {
+          border: none;
+          box-shadow: none;
+          padding: 0;
+          max-width: 100%;
+        }
+        .module-card,
+        .plan-card,
+        .party-grid,
+        .value-banner {
+          break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Top Action Controls -->
+    <div class="actions-bar">
+      <button onclick="window.print()" class="btn btn-primary">
+        🖨️ Imprimir / Guardar como PDF
+      </button>
+    </div>
+
+    <div class="document-container">
+      <!-- 1. Header & Branding -->
+      <header class="header">
+        <div class="brand-logo">
+          <div class="brand-logo-text">FP ZAPATILLAS</div>
+          <div class="brand-subtitle">Catálogo Importado & E-Commerce</div>
+        </div>
+        <div class="document-meta">
+          <div class="doc-badge">Presupuesto Oficial</div>
+          <div class="meta-date">Fecha: 12 de Agosto, 2026</div>
+          <div class="meta-date">Validez: 15 Días corridos</div>
+          <div
+            class="meta-date"
+            style="font-weight: 700; color: var(--ink); margin-top: 4px"
+          >
+            N° REF: #PRES-2026-001
+          </div>
+        </div>
+      </header>
+
+      <!-- 2. Parties Grid -->
+      <div class="party-grid">
+        <div class="party-box">
+          <h4>Cliente</h4>
+          <p>FP Zapatillas Importadas</p>
+          <span>Atención & Ventas WhatsApp</span>
+          <span>Tucumán, Argentina</span>
+        </div>
+        <div class="party-box">
+          <h4>Proveedor de Desarrollo</h4>
+          <p>Equipo de Ingeniería E-Commerce</p>
+          <span>Desarrollo Web & Plataformas</span>
+          <span>Contacto Técnico Especializado</span>
+        </div>
+      </div>
+
+      <!-- 3. Executive Summary -->
+      <div style="margin-bottom: 30px">
+        <h3 class="section-title">Resumen del Proyecto</h3>
+        <p style="font-size: 13px; color: var(--charcoal); line-height: 1.6">
+          Propuesta comercial para la creación del sistema web completo de <strong>FP Zapatillas</strong>. El proyecto incluye la tienda digital para celulares y computadoras, un sistema de pedidos conectado directo a tu WhatsApp, y un panel de control privado para administrar tus productos, precios, fotos, marcas y ver el reporte de tus ventas diarias.
+        </p>
+      </div>
+
+      <!-- 4. Functional Scope Breakdown -->
+      <h3 class="section-title">¿Qué Incluye el Desarrollo?</h3>
+
+      <div class="modules-list">
+        <!-- Module 1 -->
+        <div class="module-card">
+          <div class="module-header">
+            <span class="module-title"
+              >1. Tienda Online Móvil y Computadora</span
+            >
+            <span class="module-tag">Catálogo Web</span>
+          </div>
+          <ul class="module-features">
+            <li>Diseño moderno estilo marca deportiva oficial en blanco, negro y gris.</li>
+            <li>Carrusel principal para promociones, ofertas y lanzamientos destacados.</li>
+            <li>Buscador instantáneo por nombre de modelo de zapatilla.</li>
+            <li>Filtros dinámicos por Marca, Tipo de calzado, Género y Talle.</li>
+            <li>Vista detallada de cada zapatilla con galería de fotos e indicador de stock.</li>
+            <li>Experiencia ágil y veloz optimizada para teléfonos celulares.</li>
+          </ul>
+        </div>
+
+        <!-- Module 2 -->
+        <div class="module-card">
+          <div class="module-header">
+            <span class="module-title"
+              >2. Carrito de Compras & Pedidos Directos a WhatsApp</span
+            >
+            <span class="module-tag">Ventas Directas</span>
+          </div>
+          <ul class="module-features">
+            <li>Carrito deslizable que recuerda la selección del comprador.</li>
+            <li>Proceso de compra en 3 pasos muy simples (Datos, Pedido y Pago).</li>
+            <li>Sin obligación de registrarse ni recordar contraseñas para comprar.</li>
+            <li>Envío del resumen del pedido directo a tu WhatsApp en 1 solo clic.</li>
+            <li>Muestra de datos bancarios (Alias y CBU) con botón de copiado fácil.</li>
+            <li>Cálculo de totales seguro para evitar cualquier error en los precios.</li>
+          </ul>
+        </div>
+
+        <!-- Module 3 -->
+        <div class="module-card">
+          <div class="module-header">
+            <span class="module-title"
+              >3. Panel de Administrador Privado</span
+            >
+            <span class="module-tag">Gestión del Negocio</span>
+          </div>
+          <ul class="module-features">
+            <li>Ingreso seguro exclusivo para vos con usuario y clave personal.</li>
+            <li>Protección total de los datos y secciones administrativas.</li>
+            <li>Gestión de Marcas de calzado (Nike, Adidas, Jordan, etc.).</li>
+            <li>Categorización por Tipo de zapatilla (Urbana, Running, Deportiva).</li>
+            <li>Carga y actualización de Banners de ofertas del carrusel principal.</li>
+            <li>Modificación de tus datos bancarios y WhatsApp de atención en tiempo real.</li>
+          </ul>
+        </div>
+
+        <!-- Module 4 -->
+        <div class="module-card">
+          <div class="module-header">
+            <span class="module-title"
+              >4. Control de Productos, Stock por Talle e Imágenes</span
+            >
+            <span class="module-tag">Inventario</span>
+          </div>
+          <ul class="module-features">
+            <li>Carga y edición de zapatillas con stock específico para cada talle.</li>
+            <li>Pantalla de control rápido de stock con avisos cuando quedan pocos pares.</li>
+            <li>Botones sencillos para sumar o restar pares disponibles en segundos.</li>
+            <li>Carga masiva de stock mediante planillas de Excel / CSV.</li>
+            <li>Carga fácil de fotos desde tu computadora o mediante enlaces guardados.</li>
+            <li>Opción de pausar o activar productos en la tienda cuando desees.</li>
+          </ul>
+        </div>
+
+        <!-- Module 5 -->
+        <div class="module-card">
+          <div class="module-header">
+            <span class="module-title"
+              >5. Registro de Ventas & Reportes de Rendimiento</span
+            >
+            <span class="module-tag">Reportes</span>
+          </div>
+          <ul class="module-features">
+            <li>Listado claro de todas las compras recibidas y su estado.</li>
+            <li>Actualización del estado del pedido (Pendiente, Confirmado, Entregado).</li>
+            <li>Botón para escribirle al cliente por WhatsApp directamente desde cada venta.</li>
+            <li>Panel con el total facturado y cobros pendientes.</li>
+            <li>Ranking con los 5 modelos de zapatillas más vendidos de tu tienda.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Value Added Guarantee Banner -->
+      <div class="value-banner">
+        <div class="value-icon">🎁</div>
+        <div class="value-text">
+          <h4>Capacitación Inicial + 60 Días de Mantenimiento Incluido</h4>
+          <p>
+            Incluye <strong>30 días de capacitación inicial</strong> en el uso
+            del panel para todo tu equipo, más
+            <strong>60 días completos de soporte técnico y mantenimiento sin costo adicional</strong>
+            post-lanzamiento.
+          </p>
+        </div>
+      </div>
+
+      <!-- 5. Investment & Total -->
+      <h3 class="section-title">Inversión del Proyecto</h3>
+
+      <div class="pricing-box">
+        <div class="pricing-info">
+          <h3>Sistema Web Completo</h3>
+          <p>
+            Incluye tienda online, panel de control, 30 días de capacitación y 60 días de soporte.
+          </p>
+        </div>
+        <div class="pricing-amount">
+          <div class="price-value">$300.000</div>
+          <div class="price-sub">Pesos Argentinos (ARS)</div>
+        </div>
+      </div>
+
+      <!-- 6. Payment Plans Grid -->
+      <h3 class="section-title">Opciones de Pago</h3>
+
+      <div class="payment-plans">
+        <!-- Option 1: 3 Payments (Recommended) -->
+        <div class="plan-card recommended">
+          <div class="plan-header">
+            <span class="plan-title">Opción A: 3 Cuotas</span>
+            <span class="plan-badge">Recomendado</span>
+          </div>
+          <ul class="plan-steps">
+            <li>
+              <span class="step-name">1° Cuota</span>
+              <span class="step-price">$100.000</span>
+            </li>
+            <li>
+              <span class="step-name">2° Cuota</span>
+              <span class="step-price">$100.000</span>
+            </li>
+            <li>
+              <span class="step-name">3° Cuota</span>
+              <span class="step-price">$100.000</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Option 2: 2 Payments -->
+        <div class="plan-card">
+          <div class="plan-header">
+            <span class="plan-title">Opción B: 2 Cuotas</span>
+          </div>
+          <ul class="plan-steps">
+            <li>
+              <span class="step-name">1° Cuota (50%)</span>
+              <span class="step-price">$150.000</span>
+            </li>
+            <li>
+              <span class="step-name">2° Cuota (50%)</span>
+              <span class="step-price">$150.000</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 7. Terms & Guarantee -->
+      <div class="terms-box">
+        <div>
+          <strong>Garantía & Soporte:</strong> Incluye 30 días de capacitación + 60 días de soporte continuo.
+        </div>
+        <div>
+          <strong>FP ZAPATILLAS 2026</strong>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

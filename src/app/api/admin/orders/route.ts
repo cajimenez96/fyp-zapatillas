@@ -1,0 +1,131 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/db';
+import Order from '@/models/Order';
+import Product from '@/models/Product';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: NextRequest) {
+  try {
+    await connectToDatabase();
+    const { searchParams } = new URL(req.url);
+
+    const status = searchParams.get('status');
+    const search = searchParams.get('search');
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '50', 10);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const query: Record<string, any> = {};
+
+    if (status && ['pendiente', 'completada', 'cancelada'].includes(status)) {
+      query.status = status;
+    }
+
+    if (search) {
+      query.$or = [
+        { orderNumber: { $regex: search, $options: 'i' } },
+        { 'guest.name': { $regex: search, $options: 'i' } },
+        { 'guest.lastName': { $regex: search, $options: 'i' } },
+        { 'guest.phone': { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+    const total = await Order.countDocuments(query);
+
+    const orders = await Order.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    return NextResponse.json({
+      ok: true,
+      data: orders,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error('Error al consultar solicitudes en admin:', error);
+    return NextResponse.json(
+      { ok: false, error: 'INTERNAL_SERVER_ERROR', message: 'Error al consultar solicitudes' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    await connectToDatabase();
+    const { id, status, notes } = await req.json();
+
+    if (!id || !status || !['pendiente', 'completada', 'cancelada'].includes(status)) {
+      return NextResponse.json(
+        { ok: false, error: 'BAD_REQUEST', message: 'ID y estado válido son obligatorios' },
+        { status: 400 }
+      );
+    }
+
+    const existingOrder = await Order.findById(id);
+    if (!existingOrder) {
+      return NextResponse.json(
+        { ok: false, error: 'NOT_FOUND', message: 'Solicitud no encontrada' },
+        { status: 404 }
+      );
+    }
+
+    const previousStatus = existingOrder.status;
+
+    // Handle stock decrement when moving to 'completada'
+    if (previousStatus !== 'completada' && status === 'completada') {
+      for (const item of existingOrder.items) {
+        const product = await Product.findById(item.productId);
+        if (product) {
+          const sizesStock = product.sizesStock.map((s) => {
+            if (s.size === item.size) {
+              return { ...s, stock: Math.max(0, s.stock - item.qty) };
+            }
+            return s;
+          });
+          product.sizesStock = sizesStock;
+          await product.save();
+        }
+      }
+    }
+
+    // Restore stock if previously completed order is cancelled
+    if (previousStatus === 'completada' && status === 'cancelada') {
+      for (const item of existingOrder.items) {
+        const product = await Product.findById(item.productId);
+        if (product) {
+          const sizesStock = product.sizesStock.map((s) => {
+            if (s.size === item.size) {
+              return { ...s, stock: s.stock + item.qty };
+            }
+            return s;
+          });
+          product.sizesStock = sizesStock;
+          await product.save();
+        }
+      }
+    }
+
+    existingOrder.status = status;
+    if (notes !== undefined) existingOrder.notes = notes.trim();
+
+    await existingOrder.save();
+
+    return NextResponse.json({ ok: true, data: existingOrder });
+  } catch (error) {
+    console.error('Error al actualizar estado de orden:', error);
+    return NextResponse.json(
+      { ok: false, error: 'INTERNAL_SERVER_ERROR', message: 'Error al actualizar la solicitud' },
+      { status: 500 }
+    );
+  }
+}

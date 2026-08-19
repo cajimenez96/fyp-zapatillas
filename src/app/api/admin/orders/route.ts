@@ -18,7 +18,8 @@ export async function GET(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const query: Record<string, any> = {};
 
-    if (status && ['pendiente', 'completada', 'cancelada'].includes(status)) {
+    const VALID_STATUSES = ['pendiente', 'autorizado', 'cancelado', 'confirmada', 'completada', 'cancelada'];
+    if (status && VALID_STATUSES.includes(status)) {
       query.status = status;
     }
 

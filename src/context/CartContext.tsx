@@ -1,12 +1,15 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { FormattedProduct } from '@/components/products';
+
+const WHOLESALE_THRESHOLD = 5;
 
 export interface CartItem {
   productId: string;
   name: string;
-  price: number;
+  retailPrice: number;
+  wholesalePrice: number;
   size: number;
   qty: number;
   image: string;
@@ -17,6 +20,8 @@ interface CartContextType {
   items: CartItem[];
   isOpen: boolean;
   totalItems: number;
+  totalPairs: number;
+  isWholesale: boolean;
   subtotal: number;
   addToCart: (product: FormattedProduct, size: number, qty: number) => void;
   removeFromCart: (productId: string, size: number) => void;
@@ -25,11 +30,12 @@ interface CartContextType {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
+  getEffectivePrice: (item: CartItem) => number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'fp_zapatillas_cart_v1';
+const LOCAL_STORAGE_KEY = 'fp_zapatillas_cart_v2';
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -60,6 +66,25 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [items, isLoaded]);
 
+  // Wholesale threshold computation
+  const totalPairs = useMemo(
+    () => items.reduce((acc, curr) => acc + curr.qty, 0),
+    [items]
+  );
+  const isWholesale = totalPairs >= WHOLESALE_THRESHOLD;
+
+  /** Returns the effective price for an item based on the current wholesale threshold */
+  const getEffectivePrice = (item: CartItem): number => {
+    return isWholesale ? item.wholesalePrice : item.retailPrice;
+  };
+
+  const totalItems = totalPairs;
+  const subtotal = useMemo(
+    () => items.reduce((acc, curr) => acc + getEffectivePrice(curr) * curr.qty, 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, isWholesale]
+  );
+
   const addToCart = (product: FormattedProduct, size: number, qty: number) => {
     const sizeStockObj = product.sizesStock.find((s) => s.size === size);
     const maxStock = sizeStockObj ? sizeStockObj.stock : 0;
@@ -89,7 +114,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         {
           productId: product._id,
           name: product.name,
-          price: product.price,
+          retailPrice: product.retailPrice,
+          wholesalePrice: product.wholesalePrice,
           size,
           qty: Math.min(qty, maxStock),
           image: imageUrl,
@@ -132,15 +158,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const closeCart = () => setIsOpen(false);
   const toggleCart = () => setIsOpen((prev) => !prev);
 
-  const totalItems = items.reduce((acc, curr) => acc + curr.qty, 0);
-  const subtotal = items.reduce((acc, curr) => acc + curr.price * curr.qty, 0);
-
   return (
     <CartContext.Provider
       value={{
         items,
         isOpen,
         totalItems,
+        totalPairs,
+        isWholesale,
         subtotal,
         addToCart,
         removeFromCart,
@@ -149,6 +174,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         openCart,
         closeCart,
         toggleCart,
+        getEffectivePrice,
       }}
     >
       {children}

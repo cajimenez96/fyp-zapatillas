@@ -2,14 +2,17 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { Eye, AlertCircle } from 'lucide-react';
+import { Eye, AlertCircle, Tag } from 'lucide-react';
 import { IProductImage, ISizeStock } from '@/models/Product';
 
 export interface FormattedProduct {
   _id: string;
   name: string;
   description: string;
-  price: number;
+  /** @deprecated Use retailPrice instead */
+  price?: number;
+  retailPrice: number;
+  wholesalePrice: number;
   gender: string;
   brandId: { _id: string; name: string } | string;
   typeId: { _id: string; name: string } | string;
@@ -37,6 +40,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     typeof product.typeId === 'object' && product.typeId !== null
       ? product.typeId.name
       : '';
+
+  // Resolve prices with legacy fallback
+  const retailPrice = product.retailPrice ?? product.price ?? 0;
+  const wholesalePrice = product.wholesalePrice ?? retailPrice;
+  const hasWholesaleDiscount = wholesalePrice < retailPrice;
 
   // Get primary image or first available
   const primaryImage =
@@ -74,6 +82,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           ) : (
             <span className="bg-white/90 text-[#111111] text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full backdrop-blur-sm border border-[#e5e5e5] shadow-xs">
               {product.gender}
+            </span>
+          )}
+          {/* Wholesale badge */}
+          {hasWholesaleDiscount && !product.isOutOfStock && (
+            <span className="inline-flex items-center gap-1 bg-[#007d48] text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
+              <Tag className="w-3 h-3" /> Precio Mayorista
             </span>
           )}
         </div>
@@ -118,12 +132,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
 
-        {/* Price Row */}
-        <div className="flex items-baseline gap-2 mt-1">
+        {/* Dual Price Row */}
+        <div className="flex items-baseline gap-2 mt-1 flex-wrap">
           <span className="font-extrabold text-lg text-[#111111]">
-            ${product.price.toLocaleString('es-AR')}
+            ${retailPrice.toLocaleString('es-AR')}
           </span>
+          {hasWholesaleDiscount && (
+            <span className="text-xs font-bold text-[#007d48] bg-[#007d48]/10 px-2 py-0.5 rounded-full">
+              Mayorista: ${wholesalePrice.toLocaleString('es-AR')}
+            </span>
+          )}
         </div>
+        {hasWholesaleDiscount && (
+          <p className="text-[10px] text-[#707072] font-medium mt-0.5">
+            ✦ Precio mayorista al llevar 5 pares o más
+          </p>
+        )}
       </div>
     </div>
   );

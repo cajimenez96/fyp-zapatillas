@@ -1,13 +1,24 @@
 import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 
-export type OrderStatus = 'pendiente' | 'confirmada' | 'completada' | 'cancelada';
-export type PaymentMethodType = 'transferencia' | 'efectivo';
+export type OrderStatus =
+  | 'pendiente'
+  | 'autorizado'
+  | 'cancelado'
+  // Legacy statuses — kept for backward compatibility with existing documents
+  | 'confirmada'
+  | 'completada'
+  | 'cancelada';
+
+export type OrderOrigin = 'web' | 'admin_direct';
+export type AppliedPriceType = 'retail' | 'wholesale' | 'custom';
+export type PaymentMethodType = 'transferencia' | 'efectivo' | 'tarjeta' | 'otro';
 
 export interface IOrderItem {
   productId: Types.ObjectId;
   name: string;
   size: number;
   qty: number;
+  appliedPriceType: AppliedPriceType;
   unitPrice: number;
   subtotal: number;
 }
@@ -20,6 +31,7 @@ export interface ICustomerGuest {
 
 export interface IOrder {
   orderNumber: string;
+  origin: OrderOrigin;
   guest: ICustomerGuest;
   items: IOrderItem[];
   subtotal: number;
@@ -53,6 +65,11 @@ const OrderItemSchema = new Schema<IOrderItem>(
       type: Number,
       required: [true, 'La cantidad es obligatoria'],
       min: [1, 'La cantidad mínima es 1'],
+    },
+    appliedPriceType: {
+      type: String,
+      enum: ['retail', 'wholesale', 'custom'],
+      default: 'retail',
     },
     unitPrice: {
       type: Number,
@@ -98,6 +115,12 @@ const OrderSchema: Schema<IOrderDocument> = new Schema(
       index: true,
       trim: true,
     },
+    origin: {
+      type: String,
+      enum: ['web', 'admin_direct'],
+      default: 'web',
+      index: true,
+    },
     guest: {
       type: CustomerGuestSchema,
       required: true,
@@ -127,12 +150,12 @@ const OrderSchema: Schema<IOrderDocument> = new Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['transferencia', 'efectivo'],
+      enum: ['transferencia', 'efectivo', 'tarjeta', 'otro'],
       default: 'transferencia',
     },
     status: {
       type: String,
-      enum: ['pendiente', 'confirmada', 'completada', 'cancelada'],
+      enum: ['pendiente', 'autorizado', 'cancelado', 'confirmada', 'completada', 'cancelada'],
       default: 'pendiente',
       index: true,
     },
@@ -148,6 +171,7 @@ const OrderSchema: Schema<IOrderDocument> = new Schema(
 );
 
 OrderSchema.index({ status: 1, createdAt: -1 });
+OrderSchema.index({ origin: 1, createdAt: -1 });
 
 const Order: Model<IOrderDocument> =
   mongoose.models.Order || mongoose.model<IOrderDocument>('Order', OrderSchema);

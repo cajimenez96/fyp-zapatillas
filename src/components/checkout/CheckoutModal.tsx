@@ -85,8 +85,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
     name: item.name,
     size: item.size,
     qty: item.qty,
-    price: item.price,
-    subtotal: item.price * item.qty,
+    price: item.retailPrice,
+    subtotal: item.retailPrice * item.qty,
   }));
 
   return (

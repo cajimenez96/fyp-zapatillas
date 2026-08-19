@@ -86,7 +86,7 @@ export const Step2OrderReview: React.FC<Step2OrderReviewProps> = ({
                 Cantidad: <strong className="text-[#111111]">{item.qty}</strong>
               </p>
               <p className="text-xs font-extrabold text-[#111111] mt-0.5">
-                ${(item.price * item.qty).toLocaleString("es-AR")}
+                ${((item.retailPrice) * item.qty).toLocaleString("es-AR")}
               </p>
             </div>
           </div>

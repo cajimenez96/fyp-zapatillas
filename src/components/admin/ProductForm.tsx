@@ -23,7 +23,9 @@ interface ProductFormProps {
     _id?: string;
     name: string;
     description: string;
-    price: number;
+    price?: number;
+    retailPrice?: number;
+    wholesalePrice?: number;
     brandId: string | { _id: string; name: string };
     typeId: string | { _id: string; name: string };
     gender: GenderType;
@@ -56,8 +58,19 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   // Form Fields
   const [name, setName] = useState(initialData?.name || '');
   const [description, setDescription] = useState(initialData?.description || '');
-  const [price, setPrice] = useState<number | ''>(
-    initialData?.price !== undefined ? initialData.price : ''
+  const [retailPrice, setRetailPrice] = useState<number | ''>(
+    initialData?.retailPrice !== undefined
+      ? initialData.retailPrice
+      : initialData?.price !== undefined
+      ? initialData.price
+      : ''
+  );
+  const [wholesalePrice, setWholesalePrice] = useState<number | ''>(
+    initialData?.wholesalePrice !== undefined
+      ? initialData.wholesalePrice
+      : initialData?.price !== undefined
+      ? initialData.price
+      : ''
   );
   const [brandId, setBrandId] = useState<string>(
     typeof initialData?.brandId === 'object'
@@ -156,8 +169,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       setErrorMsg('La descripción es obligatoria');
       return;
     }
-    if (price === '' || price < 0) {
-      setErrorMsg('Ingresá un precio válido mayor o igual a 0');
+    if (retailPrice === '' || Number(retailPrice) < 0) {
+      setErrorMsg('Ingresá un precio minorista válido mayor o igual a 0');
+      return;
+    }
+    if (wholesalePrice === '' || Number(wholesalePrice) < 0) {
+      setErrorMsg('Ingresá un precio mayorista válido mayor o igual a 0');
+      return;
+    }
+    if (Number(wholesalePrice) > Number(retailPrice)) {
+      setErrorMsg('El precio mayorista no puede ser mayor que el precio minorista');
       return;
     }
     if (!brandId || !typeId) {
@@ -188,7 +209,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             id: initialData?._id,
             name: name.trim(),
             description: description.trim(),
-            price: Number(price),
+            retailPrice: Number(retailPrice),
+            wholesalePrice: Number(wholesalePrice),
             active,
             images: validImages,
             sizesStock,
@@ -196,7 +218,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         : {
             name: name.trim(),
             description: description.trim(),
-            price: Number(price),
+            retailPrice: Number(retailPrice),
+            wholesalePrice: Number(wholesalePrice),
             brandId,
             typeId,
             gender,
@@ -314,30 +337,47 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-extrabold uppercase tracking-wider text-[#111111] mb-1.5">
-                  Precio Fijo ($ ARS) *
+                  Precio Minorista ($ ARS) *
                 </label>
                 <input
                   type="number"
-                  placeholder="Ej: 120000"
-                  value={price}
+                  placeholder="Ej: 130000"
+                  value={retailPrice}
                   onChange={(e) =>
-                    setPrice(e.target.value === '' ? '' : Number(e.target.value))
+                    setRetailPrice(e.target.value === '' ? '' : Number(e.target.value))
                   }
                   className="w-full bg-[#f5f5f5] text-[#111111] text-sm font-extrabold py-3 px-3 rounded-none border border-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#111111]"
                 />
+                <p className="text-[10px] text-[#707072] mt-1">Precio para compras de 1 a 4 pares</p>
               </div>
 
-              <div className="flex items-center pt-5">
-                <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-[#111111]">
-                  <input
-                    type="checkbox"
-                    checked={active}
-                    onChange={(e) => setActive(e.target.checked)}
-                    className="w-4 h-4 accent-[#111111] cursor-pointer"
-                  />
-                  <span>Producto Activo (Visible en tienda)</span>
+              <div>
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-[#111111] mb-1.5">
+                  Precio Mayorista ($ ARS) *
                 </label>
+                <input
+                  type="number"
+                  placeholder="Ej: 110000"
+                  value={wholesalePrice}
+                  onChange={(e) =>
+                    setWholesalePrice(e.target.value === '' ? '' : Number(e.target.value))
+                  }
+                  className="w-full bg-[#f5f5f5] text-[#111111] text-sm font-extrabold py-3 px-3 rounded-none border border-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#111111]"
+                />
+                <p className="text-[10px] text-[#707072] mt-1">Precio para compras de 5 pares o más</p>
               </div>
+            </div>
+
+            <div className="flex items-center pt-2">
+              <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-[#111111]">
+                <input
+                  type="checkbox"
+                  checked={active}
+                  onChange={(e) => setActive(e.target.checked)}
+                  className="w-4 h-4 accent-[#111111] cursor-pointer"
+                />
+                <span>Producto Activo (Visible en tienda)</span>
+              </label>
             </div>
           </div>
 

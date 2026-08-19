@@ -10,17 +10,12 @@ export async function GET() {
     let settings = await Settings.findOne({}).lean();
 
     if (!settings) {
-      settings = await Settings.create({
-        bankAlias: 'FP.ZAPATILLAS',
-        bankHolder: 'FP Calzados',
-        bankName: 'Banco Galicia',
-        storePhone: '5493815218630',
-      });
+      settings = await Settings.create({});
     }
 
     return NextResponse.json({ ok: true, data: settings });
   } catch (error) {
-    console.error('Error al obtener ajustes:', error);
+    console.error('Error al obtener ajustes públicos:', error);
     return NextResponse.json(
       { ok: false, error: 'INTERNAL_SERVER_ERROR', message: 'Error al consultar ajustes de tienda' },
       { status: 500 }

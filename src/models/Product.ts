@@ -17,7 +17,10 @@ export interface ISizeStock {
 export interface IProduct {
   name: string;
   description: string;
-  price: number;
+  /** @deprecated Use retailPrice instead */
+  price?: number;
+  retailPrice: number;
+  wholesalePrice: number;
   brandId: Types.ObjectId;
   typeId: Types.ObjectId;
   gender: GenderType;
@@ -60,10 +63,20 @@ const ProductSchema: Schema<IProductDocument> = new Schema(
       required: [true, 'La descripción del producto es obligatoria'],
       trim: true,
     },
+    // Legacy field — kept for backward compatibility with existing documents
     price: {
       type: Number,
-      required: [true, 'El precio es obligatorio'],
       min: [0, 'El precio no puede ser negativo'],
+    },
+    retailPrice: {
+      type: Number,
+      required: [true, 'El precio minorista es obligatorio'],
+      min: [0, 'El precio minorista no puede ser negativo'],
+    },
+    wholesalePrice: {
+      type: Number,
+      required: [true, 'El precio mayorista es obligatorio'],
+      min: [0, 'El precio mayorista no puede ser negativo'],
     },
     brandId: {
       type: Schema.Types.ObjectId,

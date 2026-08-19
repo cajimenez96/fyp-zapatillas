@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
     const body = await req.json();
 
-    const { name, description, price, brandId, typeId, gender, active, images, sizesStock } = body;
+    const { name, description, retailPrice, wholesalePrice, brandId, typeId, gender, active, images, sizesStock } = body;
 
     // Validations
     if (!name || !name.trim()) {
@@ -104,9 +104,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (price === undefined || price === null || price < 0) {
+    if (retailPrice === undefined || retailPrice === null || Number(retailPrice) < 0) {
       return NextResponse.json(
-        { ok: false, error: 'BAD_REQUEST', message: 'El precio debe ser un número mayor o igual a 0' },
+        { ok: false, error: 'BAD_REQUEST', message: 'El precio minorista debe ser un número mayor o igual a 0' },
+        { status: 400 }
+      );
+    }
+
+    if (wholesalePrice === undefined || wholesalePrice === null || Number(wholesalePrice) < 0) {
+      return NextResponse.json(
+        { ok: false, error: 'BAD_REQUEST', message: 'El precio mayorista debe ser un número mayor o igual a 0' },
         { status: 400 }
       );
     }
@@ -135,7 +142,8 @@ export async function POST(req: NextRequest) {
     const newProduct = await Product.create({
       name: name.trim(),
       description: description.trim(),
-      price: Number(price),
+      retailPrice: Number(retailPrice),
+      wholesalePrice: Number(wholesalePrice),
       brandId,
       typeId,
       gender,
@@ -158,7 +166,7 @@ export async function PUT(req: NextRequest) {
   try {
     await connectToDatabase();
     const body = await req.json();
-    const { id, name, description, price, active, images, sizesStock } = body;
+    const { id, name, description, retailPrice, wholesalePrice, active, images, sizesStock } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -173,7 +181,8 @@ export async function PUT(req: NextRequest) {
 
     if (name !== undefined) updateFields.name = name.trim();
     if (description !== undefined) updateFields.description = description.trim();
-    if (price !== undefined) updateFields.price = Number(price);
+    if (retailPrice !== undefined) updateFields.retailPrice = Number(retailPrice);
+    if (wholesalePrice !== undefined) updateFields.wholesalePrice = Number(wholesalePrice);
     if (active !== undefined) updateFields.active = Boolean(active);
     if (images !== undefined) updateFields.images = images;
     if (sizesStock !== undefined) updateFields.sizesStock = sizesStock;

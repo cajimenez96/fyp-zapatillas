@@ -1,8 +1,9 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load environment variables from .env.local
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+// Load environment variables (defaults to .env.local or specified by ENV_FILE)
+const envFile = process.env.ENV_FILE || '.env.local';
+dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 import mongoose from 'mongoose';
 import Brand from '../src/models/Brand';

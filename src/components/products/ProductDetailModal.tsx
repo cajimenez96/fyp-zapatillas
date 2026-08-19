@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { X, ShoppingBag, Check, AlertCircle, ShieldCheck } from 'lucide-react';
+import { X, ShoppingBag, Check, AlertCircle, ShieldCheck, Tag } from 'lucide-react';
 import { FormattedProduct } from './ProductCard';
+import { useCart } from '@/context/CartContext';
 
 export interface CartItemAddPayload {
   product: FormattedProduct;
@@ -26,6 +27,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [selectedSize, setSelectedSize] = useState<number | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [addedSuccess, setAddedSuccess] = useState(false);
+
+  // Get current cart wholesale status to show live pricing
+  const { isWholesale, totalPairs } = useCart();
 
   useEffect(() => {
     if (product) {
@@ -58,6 +62,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     typeof product.typeId === 'object' && product.typeId !== null
       ? product.typeId.name
       : '';
+
+  // Resolve prices with legacy fallback
+  const retailPrice = product.retailPrice ?? product.price ?? 0;
+  const wholesalePrice = product.wholesalePrice ?? retailPrice;
+  const hasWholesaleDiscount = wholesalePrice < retailPrice;
+
+  // Effective price based on current cart state
+  const effectivePrice = isWholesale ? wholesalePrice : retailPrice;
+  const pairsToWholesale = Math.max(0, 5 - totalPairs);
 
   // Get max stock for selected size
   const currentSizeObj = product.sizesStock.find((s) => s.size === selectedSize);
@@ -152,9 +165,39 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {product.name}
               </h2>
 
-              <p className="text-2xl font-extrabold text-[#111111]">
-                ${product.price.toLocaleString('es-AR')}
-              </p>
+              {/* Pricing Section */}
+              <div className="space-y-2">
+                {/* Active price */}
+                <div className="flex items-baseline gap-3">
+                  <span className="text-2xl font-extrabold text-[#111111]">
+                    ${effectivePrice.toLocaleString('es-AR')}
+                  </span>
+                  {isWholesale && hasWholesaleDiscount && (
+                    <span className="text-sm line-through text-[#707072]">
+                      ${retailPrice.toLocaleString('es-AR')}
+                    </span>
+                  )}
+                </div>
+
+                {/* Wholesale context */}
+                {hasWholesaleDiscount && (
+                  <div className={`p-2.5 rounded-lg text-xs font-semibold flex items-center gap-2 ${
+                    isWholesale
+                      ? 'bg-[#007d48]/10 text-[#007d48] border border-[#007d48]/20'
+                      : 'bg-[#f5f5f5] text-[#707072] border border-[#e5e5e5]'
+                  }`}>
+                    <Tag className="w-3.5 h-3.5 flex-shrink-0" />
+                    {isWholesale ? (
+                      <span>¡Precio mayorista activo! (${wholesalePrice.toLocaleString('es-AR')} c/u)</span>
+                    ) : (
+                      <span>
+                        Precio mayorista: ${wholesalePrice.toLocaleString('es-AR')} — te faltan{' '}
+                        <strong>{pairsToWholesale} par{pairsToWholesale !== 1 ? 'es' : ''}</strong> más en el carrito.
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <div className="border-t border-b border-[#f5f5f5] py-3">
                 <p className="text-xs text-[#707072] leading-relaxed">

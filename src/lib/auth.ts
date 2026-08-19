@@ -8,7 +8,7 @@ const SECRET_KEY = new TextEncoder().encode(
 const ADMIN_USER = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_HASH =
   process.env.ADMIN_PASSWORD_HASH ||
-  '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeg6Lruj3vjPGga31lW'; // default hash for 'admin123'
+  '$2b$10$Zb/AGPZFkAFzn9Zikuc5GuowsybEueiaoP7b3VqFMY78NqrJHLURu'; // default hash for 'fypZapatillas.DEV'
 
 export async function verifyAdminCredentials(
   username: string,
@@ -18,7 +18,7 @@ export async function verifyAdminCredentials(
     return false;
   }
   // Fallback for dev mode
-  if (password === 'admin123') return true;
+  if (password === 'fypZapatillas.DEV') return true;
 
   try {
     return await bcrypt.compare(password, ADMIN_HASH);

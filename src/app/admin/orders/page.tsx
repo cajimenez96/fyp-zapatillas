@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AdminNav } from '@/components/admin/AdminNav';
 import { OrderDetailModal, AdminOrderItem } from '@/components/admin/OrderDetailModal';
+import { OrderEditModal } from '@/components/admin/OrderEditModal';
 import {
   ShoppingBag,
   Search,
@@ -10,25 +11,51 @@ import {
   AlertCircle,
   Eye,
   Clock,
-  Check,
+  ShieldCheck,
   Ban,
+  Plus,
 } from 'lucide-react';
-import { OrderStatus } from '@/models/Order';
+import Link from 'next/link';
+
+const STATUS_STYLES: Record<string, string> = {
+  pendiente: 'bg-[#f59e0b] text-white border-[#f59e0b]',
+  autorizado: 'bg-[#007d48] text-white border-[#007d48]',
+  cancelado: 'bg-[#d30005] text-white border-[#d30005]',
+  completada: 'bg-[#007d48] text-white border-[#007d48]',
+  confirmada: 'bg-[#007d48] text-white border-[#007d48]',
+  cancelada: 'bg-[#d30005] text-white border-[#d30005]',
+};
+
+const STATUS_ICON: Record<string, React.ReactNode> = {
+  pendiente: <Clock className="w-3 h-3" />,
+  autorizado: <ShieldCheck className="w-3 h-3" />,
+  cancelado: <Ban className="w-3 h-3" />,
+  completada: <ShieldCheck className="w-3 h-3" />,
+  cancelada: <Ban className="w-3 h-3" />,
+};
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<AdminOrderItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters & Search
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
 
-  // Selected Order for Modal
   const [selectedOrder, setSelectedOrder] = useState<AdminOrderItem | null>(null);
+  const [editingOrder, setEditingOrder] = useState<AdminOrderItem | null>(null);
 
-  // Alerts
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  const showSuccess = (msg: string) => {
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(''), 4000);
+  };
+
+  const showError = (msg: string) => {
+    setErrorMsg(msg);
+    setTimeout(() => setErrorMsg(''), 6000);
+  };
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -54,30 +81,45 @@ export default function AdminOrdersPage() {
     fetchOrders();
   }, [fetchOrders]);
 
-  const handleStatusChange = async (id: string, newStatus: OrderStatus) => {
+  const handleAuthorize = async (id: string, paymentMethod: string) => {
     setErrorMsg('');
     setSuccessMsg('');
-
     try {
-      const res = await fetch('/api/admin/orders', {
-        method: 'PUT',
+      const res = await fetch(`/api/admin/orders/${id}/authorize`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status: newStatus }),
+        body: JSON.stringify({ recordedPaymentMethod: paymentMethod }),
       });
 
       const json = await res.json();
+      if (!json.ok) throw new Error(json.message || 'Error al autorizar la orden');
 
-      if (!json.ok) {
-        throw new Error(json.message || 'Error al actualizar el estado de la orden');
-      }
-
-      setSuccessMsg(`Solicitud #${json.data.orderNumber} actualizada a status "${newStatus}"`);
-      if (selectedOrder && selectedOrder._id === id) {
-        setSelectedOrder(json.data);
-      }
+      showSuccess(`Venta #${json.orderNumber} autorizada y stock descontado.`);
+      setSelectedOrder(null);
       fetchOrders();
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error al cambiar estado');
+      showError(err instanceof Error ? err.message : 'Error al autorizar');
+    }
+  };
+
+  const handleCancel = async (id: string) => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel' }),
+      });
+
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.message || 'Error al cancelar la orden');
+
+      showSuccess(`Solicitud #${json.data.orderNumber} cancelada.`);
+      setSelectedOrder(null);
+      fetchOrders();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Error al cancelar');
     }
   };
 
@@ -90,12 +132,19 @@ export default function AdminOrdersPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-extrabold uppercase tracking-tight text-[#111111] flex items-center gap-2">
-              <ShoppingBag className="w-7 h-7" /> Solicitudes de Pedido (Ventas)
+              <ShoppingBag className="w-7 h-7" /> Solicitudes de Pedido
             </h1>
             <p className="text-xs text-[#707072] mt-1">
-              Gestioná las compras registradas, actualizá su estado y contactá clientes vía WhatsApp.
+              Gestioná los pedidos, autorizá ventas y descuento stock en tiempo real.
             </p>
           </div>
+
+          <Link
+            href="/admin/pos"
+            className="py-3 px-5 bg-[#111111] hover:bg-black text-white font-bold text-xs uppercase tracking-wider rounded-full flex items-center gap-2 transition-all shadow-md"
+          >
+            <Plus className="w-4 h-4" /> Nueva Venta Directa
+          </Link>
         </div>
 
         {/* Alerts */}
@@ -130,8 +179,8 @@ export default function AdminOrdersPage() {
             {[
               { label: 'Todas', value: '' },
               { label: 'Pendientes', value: 'pendiente' },
-              { label: 'Completadas', value: 'completada' },
-              { label: 'Canceladas', value: 'cancelada' },
+              { label: 'Autorizadas', value: 'autorizado' },
+              { label: 'Canceladas', value: 'cancelado' },
             ].map((st) => (
               <button
                 key={st.value}
@@ -166,7 +215,7 @@ export default function AdminOrdersPage() {
                     <th className="py-3 px-4">N° Solicitud</th>
                     <th className="py-3 px-4">Cliente</th>
                     <th className="py-3 px-4 text-center">Ítems</th>
-                    <th className="py-3 px-4 text-center">Medio Pago</th>
+                    <th className="py-3 px-4 text-center">Origen</th>
                     <th className="py-3 px-4 text-right">Total ($)</th>
                     <th className="py-3 px-4 text-center">Estado</th>
                     <th className="py-3 px-4 text-right">Acciones</th>
@@ -197,8 +246,14 @@ export default function AdminOrdersPage() {
                         {ord.items.reduce((acc, curr) => acc + curr.qty, 0)} pares
                       </td>
 
-                      <td className="py-3 px-4 text-center uppercase font-bold text-[#707072]">
-                        {ord.paymentMethod}
+                      <td className="py-3 px-4 text-center">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          ord.origin === 'admin_direct'
+                            ? 'bg-[#111111] text-white'
+                            : 'bg-[#f5f5f5] text-[#707072] border border-[#e5e5e5]'
+                        }`}>
+                          {ord.origin === 'admin_direct' ? 'Directa' : 'Web'}
+                        </span>
                       </td>
 
                       <td className="py-3 px-4 text-right font-extrabold text-sm text-[#111111]">
@@ -206,29 +261,10 @@ export default function AdminOrdersPage() {
                       </td>
 
                       <td className="py-3 px-4 text-center">
-                        <select
-                          value={ord.status}
-                          onChange={(e) =>
-                            handleStatusChange(ord._id, e.target.value as OrderStatus)
-                          }
-                          className={`text-xs font-extrabold py-1 px-2.5 rounded-full border cursor-pointer ${
-                            ord.status === 'completada'
-                              ? 'bg-[#007d48] text-white border-[#007d48]'
-                              : ord.status === 'pendiente'
-                              ? 'bg-[#f59e0b] text-white border-[#f59e0b]'
-                              : 'bg-[#d30005] text-white border-[#d30005]'
-                          }`}
-                        >
-                          <option value="pendiente" className="bg-white text-black">
-                            PENDIENTE
-                          </option>
-                          <option value="completada" className="bg-white text-black">
-                            COMPLETADA
-                          </option>
-                          <option value="cancelada" className="bg-white text-black">
-                            CANCELADA
-                          </option>
-                        </select>
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold py-1 px-2.5 rounded-full border ${STATUS_STYLES[ord.status] ?? STATUS_STYLES['pendiente']}`}>
+                          {STATUS_ICON[ord.status]}
+                          {ord.status.toUpperCase()}
+                        </span>
                       </td>
 
                       <td className="py-3 px-4 text-right">
@@ -252,7 +288,22 @@ export default function AdminOrdersPage() {
       <OrderDetailModal
         order={selectedOrder}
         onClose={() => setSelectedOrder(null)}
-        onStatusChange={handleStatusChange}
+        onAuthorize={handleAuthorize}
+        onCancel={handleCancel}
+        onEdit={(order) => {
+          setEditingOrder(order);
+          setSelectedOrder(null);
+        }}
+      />
+
+      {/* Order Edit Modal */}
+      <OrderEditModal
+        order={editingOrder}
+        onClose={() => setEditingOrder(null)}
+        onSaved={() => {
+          showSuccess('Pedido actualizado correctamente.');
+          fetchOrders();
+        }}
       />
     </div>
   );

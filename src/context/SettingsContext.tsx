@@ -1,0 +1,135 @@
+"use client";
+
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+
+export interface StoreSettings {
+  storeName: string;
+  storePhone: string;
+  storeEmail: string;
+  businessHours: string;
+  whatsappInquiryMessage: string;
+  instagramUrl: string;
+  facebookUrl: string;
+
+  bankAlias: string;
+  bankCbu: string;
+  bankHolder: string;
+  bankCuit: string;
+  bankName: string;
+
+  minStockAlert: number;
+  wholesaleMinPairs: number;
+  shippingInfo: string;
+}
+
+const DEFAULT_SETTINGS: StoreSettings = {
+  storeName: "FP Zapatillas",
+  storePhone: "-",
+  storeEmail: "contacto@fpzapatillas.com",
+  businessHours: "Lun a Sáb: 9:00 a 20:00 hs",
+  whatsappInquiryMessage: "Hola! Tengo una consulta sobre un calzado",
+  instagramUrl: "",
+  facebookUrl: "",
+
+  bankAlias: "FP.ZAPATILLAS",
+  bankCbu: "",
+  bankHolder: "FP Calzados",
+  bankCuit: "",
+  bankName: "Banco Galicia",
+
+  minStockAlert: 3,
+  wholesaleMinPairs: 5,
+  shippingInfo: "Envíos a todo el país en 24hs",
+};
+
+interface SettingsContextType {
+  settings: StoreSettings;
+  loading: boolean;
+  refreshSettings: () => Promise<void>;
+  formatPhoneNumber: (phone: string) => string;
+}
+
+const SettingsContext = createContext<SettingsContextType | undefined>(
+  undefined,
+);
+
+export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [settings, setSettings] = useState<StoreSettings>(DEFAULT_SETTINGS);
+  const [loading, setLoading] = useState(true);
+
+  const fetchSettings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/settings");
+      const json = await res.json();
+      if (json.ok && json.data) {
+        setSettings((prev) => ({
+          ...prev,
+          ...json.data,
+        }));
+      }
+    } catch (err) {
+      console.error("Error al cargar configuración global de tienda:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
+  /**
+   * Formats a phone string like "5493815218630" into "+54 9 381 521-8630"
+   */
+  const formatPhoneNumber = (phone: string): string => {
+    const clean = phone.replace(/[^0-9]/g, "");
+    if (!clean) return phone;
+
+    if (clean.startsWith("549") && clean.length >= 12) {
+      const area = clean.slice(3, 6);
+      const part1 = clean.slice(6, 9);
+      const part2 = clean.slice(9);
+      return `+54 9 ${area} ${part1}-${part2}`;
+    }
+
+    if (clean.startsWith("54") && clean.length >= 11) {
+      const area = clean.slice(2, 5);
+      const part1 = clean.slice(5, 8);
+      const part2 = clean.slice(8);
+      return `+54 ${area} ${part1}-${part2}`;
+    }
+
+    return `+${clean}`;
+  };
+
+  return (
+    <SettingsContext.Provider
+      value={{
+        settings,
+        loading,
+        refreshSettings: fetchSettings,
+        formatPhoneNumber,
+      }}
+    >
+      {children}
+    </SettingsContext.Provider>
+  );
+};
+
+export const useSettings = (): SettingsContextType => {
+  const context = useContext(SettingsContext);
+  if (!context) {
+    throw new Error(
+      "useSettings debe ser utilizado dentro de un SettingsProvider",
+    );
+  }
+  return context;
+};

@@ -66,7 +66,8 @@ interface IProduct {
   _id: Types.ObjectId;
   name: string;
   description: string;
-  price: number; // Guardado en unidades mínimas o flotante positivo
+  retailPrice: number; // Precio minorista (< 5 pares)
+  wholesalePrice: number; // Precio mayorista (>= 5 pares totales en la compra)
   brandId: Types.ObjectId; // Ref -> Brand (Inmutable post-creación)
   typeId: Types.ObjectId; // Ref -> FootwearType (Inmutable post-creación)
   gender: 'Hombre' | 'Mujer' | 'Niño' | 'Unisex'; // (Inmutable post-creación)
@@ -79,14 +80,15 @@ interface IProduct {
 // Índices: { active: 1, brandId: 1, typeId: 1, gender: 1 }, { "sizesStock.size": 1 }
 ```
 
-### 2.4 Colección `orders` (Solicitudes de Venta)
+### 2.4 Colección `orders` (Solicitudes y Ventas)
 ```typescript
 interface IOrderItem {
   productId: Types.ObjectId;
   name: string;
   size: number;
   qty: number;
-  unitPrice: number; // Snapshot del precio al momento del checkout
+  appliedPriceType: 'retail' | 'wholesale' | 'custom';
+  unitPrice: number; // Snapshot del precio al momento de la venta u orden
   subtotal: number; // qty * unitPrice
 }
 
@@ -99,27 +101,28 @@ interface ICustomerGuest {
 interface IOrder {
   _id: Types.ObjectId;
   orderNumber: string; // Único, formato "PED-YYYY-XXXXX", indexado
+  origin: 'web' | 'admin_direct'; // Identifica venta por checkout web o POS directo admin
   guest: ICustomerGuest;
   items: IOrderItem[];
   subtotal: number;
-  discount: number; // Por defecto 0
+  discount: number; // Monto o 0 por defecto
   total: number; // subtotal - discount
-  paymentMethod: 'transferencia' | 'efectivo';
-  status: 'pendiente' | 'confirmada' | 'cancelada';
+  paymentMethod: 'transferencia' | 'efectivo' | 'tarjeta' | 'otro';
+  status: 'pendiente' | 'autorizado' | 'cancelado';
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
-// Índices: { orderNumber: 1 }, { status: 1, createdAt: -1 }
+// Índices: { orderNumber: 1 }, { status: 1, createdAt: -1 }, { origin: 1 }
 ```
 
-### 2.5 Colección `sales_records` (Ventas Confirmadas)
+### 2.5 Colección `sales_records` (Histórico de Autorizaciones y Registro de Caja)
 ```typescript
 interface ISalesRecord {
   _id: Types.ObjectId;
   orderId: Types.ObjectId; // Ref -> Order (Único)
   orderNumber: string;
-  confirmationDate: Date;
+  authorizationDate: Date;
   recordedPaymentMethod: 'efectivo' | 'transferencia' | 'tarjeta' | 'otro';
   appliedDiscountNote?: string;
   finalTotal: number;
@@ -145,19 +148,13 @@ interface IPromotion {
 
 ---
 
-## 3. ESPECIFICACIÓN DE ENDPOINTS DE API
+## 3. ESPECIFICACIÓN DE ARQUITECTURA Y ENDPOINTS DE API
 
-### 3.1 PÚBLICOS (CLIENTE)
+### 3.1 CAPA DE CLIENTE Y LÓGICA DE TIENDA (PÚBLICOS)
 
 #### `GET /api/products`
-Retorna productos activos para el catálogo de la landing.
-- **Query Parameters:**
-  - `brandId` (opcional, string CSV): ID de marca
-  - `typeId` (opcional, string CSV): ID de tipo de calzado
-  - `size` (opcional, number CSV): Talle
-  - `search` (opcional, string): Búsqueda por nombre
-  - `random` (opcional, boolean): Si es true, retorna muestra aleatoria
-  - `page` (default: 1), `limit` (default: 20)
+Retorna productos activos indicando precios minorista y mayorista.
+- **Query Parameters:** `brandId`, `typeId`, `size`, `search`, `random`, `page`, `limit`
 - **Response `200 OK`:**
   ```json
   {
@@ -166,7 +163,8 @@ Retorna productos activos para el catálogo de la landing.
       {
         "_id": "66b1a2f3c4e5d6a7b8c9d0e1",
         "name": "Nike Air Max 90",
-        "price": 120000,
+        "retailPrice": 120000,
+        "wholesalePrice": 95000,
         "brand": { "_id": "...", "name": "Nike" },
         "type": { "_id": "...", "name": "Running" },
         "gender": "Hombre",
@@ -178,6 +176,11 @@ Retorna productos activos para el catálogo de la landing.
     "pagination": { "page": 1, "limit": 20, "total": 45, "totalPages": 3 }
   }
   ```
+
+#### Lógica de Recálculo Mayorista en Frontend (`CartContext`)
+- Se suma la cantidad total de pares en el carrito: `totalPairs = items.reduce((sum, item) => sum + item.qty, 0)`.
+- Si `totalPairs >= 5`, se aplica `wholesalePrice` a cada producto del carrito y se marca `appliedPriceType = 'wholesale'`.
+- Si `totalPairs < 5`, se utiliza `retailPrice` y se marca `appliedPriceType = 'retail'`.
 
 #### `POST /api/checkout/create-order`
 Crea una Solicitud de Venta en estado `pendiente`.
@@ -194,102 +197,130 @@ Crea una Solicitud de Venta en estado `pendiente`.
       {
         "productId": "66b1a2f3c4e5d6a7b8c9d0e1",
         "size": 42,
-        "qty": 1
+        "qty": 5
       }
     ]
   }
   ```
-- **Procesamiento Interno:**
-  1. Valida existencia y estado `activo` de los productos.
-  2. Obtiene el precio unitario real desde MongoDB (evita spoofing del cliente).
-  3. Genera secuencialmente el `orderNumber` (`PED-2026-XXXX`).
-  4. Inserta en la colección `orders` con `status: "pendiente"`.
+- **Procesamiento Interno (Validación Server-side de Precios):**
+  1. Verifica validez y disponibilidad de stock de cada producto+talle.
+  2. Evalúa la suma total de pares solicitados (`sum(qty)`).
+  3. Asigna server-side `wholesalePrice` si la suma es $\ge 5$, o `retailPrice` si es $< 5$ (previene spoofing del cliente).
+  4. Crea la orden con `origin: "web"` y `status: "pendiente"`.
 - **Response `201 Created`:**
   ```json
   {
     "ok": true,
     "orderId": "66b9e8f7a6b5c4d3e2f1a0b9",
     "orderNumber": "PED-2026-06810",
-    "subtotal": 120000,
+    "appliedPriceType": "wholesale",
+    "subtotal": 475000,
     "discount": 0,
-    "total": 120000
-  }
-  ```
-- **Error Response `400 Bad Request`:**
-  ```json
-  {
-    "ok": false,
-    "error": "BAD_REQUEST",
-    "message": "Uno o más productos seleccionados ya no están activos o no existen."
+    "total": 475000
   }
   ```
 
 ---
 
-### 3.2 ADMINISTRATIVOS (`/api/admin/*` - Requieren Auth)
+### 3.2 ADMINISTRATIVOS Y PUNTO DE VENTA (`/api/admin/*` - Requieren Auth)
 
-#### `POST /api/admin/orders/:id/confirm`
-Confirma una solicitud de venta, registra medio de pago y descuenta stock en transacción MongoDB.
+#### `PUT /api/admin/orders/:id`
+Actualiza un pedido web en estado `pendiente` (edición de productos, cantidades o precio total negociado).
+- **Payload DTO:**
+  ```json
+  {
+    "guest": {
+      "name": "Juan",
+      "lastName": "Pérez",
+      "phone": "3815218630"
+    },
+    "items": [
+      {
+        "productId": "66b1a2f3c4e5d6a7b8c9d0e1",
+        "size": 42,
+        "qty": 2,
+        "unitPrice": 95000
+      }
+    ],
+    "discount": 10000,
+    "notes": "Acuerdo telefónico por par adicional"
+  }
+  ```
+- **Procesamiento:** Modifica los ítems y totales de la orden en estado `pendiente`. **No descuenta stock aún.**
+
+#### `POST /api/admin/orders/:id/authorize`
+Autoriza un pedido pendiente, registra la venta y ejecuta el descuento efectivo de stock en transacción MongoDB.
 - **Payload DTO:**
   ```json
   {
     "recordedPaymentMethod": "transferencia",
-    "discountNote": "10% Descuento Cliente Frecuente",
-    "finalTotal": 108000
+    "discountNote": "Descuento por volumen especial",
+    "finalTotal": 180000
   }
   ```
 - **Lógica de Transacción:**
-  1. Verifica que la orden esté en estado `pendiente`.
-  2. Verifica que haya stock suficiente para cada `productId` + `size`.
-  3. Decrementa stock: `UPDATE products SET sizesStock.$.stock = sizesStock.$.stock - qty WHERE _id = productId AND sizesStock.size = size`.
-  4. Actualiza orden a `status: "confirmada"`.
-  5. Crea documento en `sales_records`.
-- **Response `200 OK`:**
+  1. Verifica que el pedido esté en estado `pendiente`.
+  2. Verifica disponibilidad de stock en `sizesStock` para cada producto+talle.
+  3. Descuenta el stock: `sizesStock.$.stock = sizesStock.$.stock - qty`.
+  4. Actualiza la orden a `status: "autorizado"`.
+  5. Crea registro en `sales_records`.
+
+#### `POST /api/admin/sales/create-direct` (Punto de Venta Admin / POS)
+Registra una venta directa efectuada desde el panel de administración.
+- **Payload DTO:**
   ```json
   {
-    "ok": true,
-    "message": "Venta confirmada exitosamente y stock actualizado.",
-    "salesRecordId": "66c0a1b2c3d4e5f6a7b8c9d0"
+    "guest": {
+      "name": "Cliente",
+      "lastName": "Mostrador",
+      "phone": "3810000000"
+    },
+    "paymentMethod": "efectivo",
+    "items": [
+      {
+        "productId": "66b1a2f3c4e5d6a7b8c9d0e1",
+        "size": 40,
+        "qty": 1,
+        "unitPrice": 120000
+      }
+    ],
+    "discount": 0
   }
   ```
-- **Error Response `409 Conflict` (Sin Stock):**
-  ```json
-  {
-    "ok": false,
-    "error": "INSUFFICIENT_STOCK",
-    "message": "Stock insuficiente para Nike Air Max 90 (Talle 42). Disponible: 0, Requerido: 1"
-  }
-  ```
+- **Procesamiento:** Inserta la orden directamente con `origin: "admin_direct"` y `status: "autorizado"`, ejecutando en la misma transacción el **descuento automático e inmediato de stock** para garantizar stock único real en la tienda.
 
 #### `POST /api/admin/products/import-csv`
-Importa masivamente productos y stock desde un archivo CSV.
-- **Payload:** `multipart/form-data` con campo `file` (archivo .csv).
+Importación masiva de productos con soporte de doble precio.
 - **Formato CSV Esperado:**
-  `nombre,marca,tipo_calzado,genero,precio,descripcion,talle,stock`
-- **Response `200 OK`:**
-  ```json
-  {
-    "ok": true,
-    "summary": {
-      "productsCreated": 12,
-      "productsUpdated": 4,
-      "stockEntriesLoaded": 48,
-      "errors": []
-    }
-  }
-  ```
+  `nombre,marca,tipo_calzado,genero,precio_minorista,precio_mayorista,descripcion,talle,stock`
 
 ---
 
-## 4. GENERADOR DE MENSAJE DE WHATSAPP (UTILITY LOGIC)
+## 4. IMPACTO EN COMPONENTES UI Y ESTADO DEL CLIENTE
 
-Lógica encargada de construir la URL de apertura nativa a WhatsApp en el Paso 3 del Checkout:
+### 4.1 UI Cliente (Tienda)
+- **Tarjetas de Producto y Modal de Detalle (`ProductCard`, `ProductDetailModal`):**
+  - Muestran badge dinámico indicando el beneficio de precio mayorista al llevar 5 o más pares.
+- **Carrito de Compras (`CartDrawer` & `CartContext`):**
+  - Barra de progreso interactiva para alcanzar los 5 pares.
+  - Recálculo inmediato de precios y totales en tiempo real al pasar el umbral de 5 unidades.
+
+### 4.2 UI Administrador (Panel)
+- **Formulario de Productos (`ProductForm`):** Campos independientes de input numérico para `precioMinorista` y `precioMayorista`.
+- **Modal/Pantalla de Gestión de Pedidos (`OrderEditModal`):** Editor de ítems y precios finales para pedidos pendientes con botones de "Autorizar Venta" y "Cancelar".
+- **Pantalla Punto de Venta Directo (`AdminPosPage`):** Buscador ágil de productos por talle, carga rápida de datos de cliente y confirmación instantánea con descuento de inventario.
+
+---
+
+## 5. GENERADOR DE MENSAJE DE WHATSAPP (UTILITY LOGIC)
 
 ```typescript
 export function buildWhatsAppShareUrl(order: IOrderSummary, storePhone: string): string {
   const itemsText = order.items
     .map(item => `• ${item.qty}x ${item.name} (Talle ${item.size}) - $${item.subtotal.toLocaleString('es-AR')}`)
     .join('\n');
+
+  const priceBadge = order.appliedPriceType === 'wholesale' ? '\n🔥 *¡Precio Mayorista Aplicado!*' : '';
 
   const message = 
 `¡Hola! Acabo de hacer mi pedido en la tienda 👟
@@ -298,7 +329,7 @@ export function buildWhatsAppShareUrl(order: IOrderSummary, storePhone: string):
 • ${order.guest.name} ${order.guest.lastName}
 📱 ${order.guest.phone}
 
-📦 *PEDIDO #${order.orderNumber}*
+📦 *PEDIDO #${order.orderNumber}*${priceBadge}
 ${itemsText}
 
 💰 *TOTAL:* $${order.total.toLocaleString('es-AR')}
@@ -312,7 +343,7 @@ Ahí transfiero al alias: TIENDA.CALZADO
 
 ---
 
-## 5. VARIABLES DE ENTORNO REQUERIDAS (`.env.local`)
+## 6. VARIABLES DE ENTORNO REQUERIDAS (`.env.local`)
 
 ```env
 # MongoDB Connection
@@ -343,113 +374,62 @@ NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY="public_..."
 
 ## 1. TECHNICAL ARCHITECTURE SUMMARY
 
-* **Fullstack Framework:** Next.js (App Router, Node.js Serverless API Routes / Server Actions).
+* **Fullstack Framework:** Next.js (App Router, Serverless API Routes / Server Actions).
 * **Database:** MongoDB (via Mongoose ODM or official `mongodb` driver).
-* **CDN Image Storage:** ImageKit / Cloudinary / AWS S3 (Exclusive persistence of public URLs in the database).
-* **Data Validation:** Zod (Shared schemas between client and server).
-* **Admin Authentication:** NextAuth.js / Jose (JWT in HttpOnly Cookies) for `/api/admin/*` routes.
-* **UI Design System:** UI strictly driven by tokens from [DESIGN.md](file:///Users/carlosjimenez/Documents/Repositorios/e-commerce/docs/DESIGN.md) (Nike-inspired athletic-editorial style, pill CTAs, neutral palette, and high-contrast typography).
+* **CDN Image Storage:** ImageKit / Cloudinary / AWS S3.
+* **Data Validation:** Zod.
+* **Admin Authentication:** NextAuth.js / Jose.
+* **UI Design System:** Governed by [DESIGN.md](file:///Users/carlosjimenez/Documents/Repositorios/e-commerce/docs/DESIGN.md).
 
 ---
 
 ## 2. DATA MODEL & SCHEMAS (MONGODB / MONGOOSE)
 
-### 2.1 Collection `brands`
+### 2.1 Collection `products`
 ```typescript
-interface IBrand {
-  _id: Types.ObjectId;
-  name: string; // Unique, indexed
-  createdAt: Date;
-  updatedAt: Date;
-}
-```
-
-### 2.2 Collection `footwear_types`
-```typescript
-interface IFootwearType {
-  _id: Types.ObjectId;
-  name: string; // Unique
-  description?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-```
-
-### 2.3 Collection `products`
-```typescript
-interface IProductImage {
-  url: string;
-  isPrincipal: boolean;
-  position: number;
-}
-
-interface ISizeStock {
-  size: number; // e.g., 42
-  stock: number; // e.g., 15
-}
-
 interface IProduct {
   _id: Types.ObjectId;
   name: string;
   description: string;
-  price: number;
-  brandId: Types.ObjectId; // Ref -> Brand (Immutable after creation)
-  typeId: Types.ObjectId; // Ref -> FootwearType (Immutable after creation)
-  gender: 'Hombre' | 'Mujer' | 'Niño' | 'Unisex'; // (Immutable after creation)
+  retailPrice: number; // Standard price (< 5 total pairs)
+  wholesalePrice: number; // Volume price (>= 5 total pairs in order)
+  brandId: Types.ObjectId;
+  typeId: Types.ObjectId;
+  gender: 'Hombre' | 'Mujer' | 'Niño' | 'Unisex';
   active: boolean;
   images: IProductImage[];
   sizesStock: ISizeStock[];
   createdAt: Date;
   updatedAt: Date;
 }
-// Indexes: { active: 1, brandId: 1, typeId: 1, gender: 1 }, { "sizesStock.size": 1 }
 ```
 
-### 2.4 Collection `orders` (Sales Requests)
+### 2.2 Collection `orders`
 ```typescript
 interface IOrderItem {
   productId: Types.ObjectId;
   name: string;
   size: number;
   qty: number;
-  unitPrice: number; // Price snapshot at checkout
-  subtotal: number; // qty * unitPrice
-}
-
-interface ICustomerGuest {
-  name: string;
-  lastName: string;
-  phone: string;
+  appliedPriceType: 'retail' | 'wholesale' | 'custom';
+  unitPrice: number;
+  subtotal: number;
 }
 
 interface IOrder {
   _id: Types.ObjectId;
-  orderNumber: string; // Unique, format "PED-YYYY-XXXXX", indexed
+  orderNumber: string;
+  origin: 'web' | 'admin_direct';
   guest: ICustomerGuest;
   items: IOrderItem[];
   subtotal: number;
-  discount: number; // Default 0
-  total: number; // subtotal - discount
-  paymentMethod: 'transferencia' | 'efectivo';
-  status: 'pendiente' | 'confirmada' | 'cancelada';
+  discount: number;
+  total: number;
+  paymentMethod: 'transferencia' | 'efectivo' | 'tarjeta' | 'otro';
+  status: 'pendiente' | 'autorizado' | 'cancelado';
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
-}
-// Indexes: { orderNumber: 1 }, { status: 1, createdAt: -1 }
-```
-
-### 2.5 Collection `sales_records` (Confirmed Sales)
-```typescript
-interface ISalesRecord {
-  _id: Types.ObjectId;
-  orderId: Types.ObjectId; // Ref -> Order (Unique)
-  orderNumber: string;
-  confirmationDate: Date;
-  recordedPaymentMethod: 'efectivo' | 'transferencia' | 'tarjeta' | 'otro';
-  appliedDiscountNote?: string;
-  finalTotal: number;
-  createdAt: Date;
 }
 ```
 
@@ -457,58 +437,9 @@ interface ISalesRecord {
 
 ## 3. API ENDPOINTS SPECIFICATION
 
-### 3.1 PUBLIC (CUSTOMER)
-
-#### `GET /api/products`
-Returns active products for the landing page catalog.
-- **Query Parameters:** `brandId`, `typeId`, `size`, `search`, `random`, `page`, `limit`.
-
-#### `POST /api/checkout/create-order`
-Creates a Sales Request in `pendiente` status.
-- **Payload DTO (Zod Schema):**
-  ```json
-  {
-    "guest": {
-      "name": "Juan",
-      "lastName": "Pérez",
-      "phone": "3815218630"
-    },
-    "paymentMethod": "transferencia",
-    "items": [
-      {
-        "productId": "66b1a2f3c4e5d6a7b8c9d0e1",
-        "size": 42,
-        "qty": 1
-      }
-    ]
-  }
-  ```
-- **Response `201 Created`:**
-  ```json
-  {
-    "ok": true,
-    "orderId": "66b9e8f7a6b5c4d3e2f1a0b9",
-    "orderNumber": "PED-2026-06810",
-    "subtotal": 120000,
-    "discount": 0,
-    "total": 120000
-  }
-  ```
-
----
-
-### 3.2 ADMIN (`/api/admin/*` - Protected)
-
-#### `POST /api/admin/orders/:id/confirm`
-Confirms a sales request, records payment method, and decrements size stock inside a MongoDB transaction.
-- **Payload DTO:**
-  ```json
-  {
-    "recordedPaymentMethod": "transferencia",
-    "discountNote": "10% Frequent Customer Discount",
-    "finalTotal": 108000
-  }
-  ```
-
-#### `POST /api/admin/products/import-csv`
-Bulk imports products and stock inventory from a CSV file.
+- `GET /api/products`: Exposes `retailPrice` and `wholesalePrice`.
+- `POST /api/checkout/create-order`: Evaluates total pairs ($\ge 5$) server-side to apply wholesale unit prices safely.
+- `PUT /api/admin/orders/:id`: Edits pending order items, quantities, and custom pricing without touching stock.
+- `POST /api/admin/orders/:id/authorize`: Authorizes order and decrements stock in a MongoDB transaction.
+- `POST /api/admin/sales/create-direct`: Registers direct POS sales as `autorizado` with instant stock deduction.
+- `POST /api/admin/products/import-csv`: Supports CSV header with `precio_minorista` and `precio_mayorista`.

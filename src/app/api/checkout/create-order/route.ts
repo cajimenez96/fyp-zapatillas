@@ -4,6 +4,8 @@ import Order from '@/models/Order';
 import Product from '@/models/Product';
 import { Types } from 'mongoose';
 
+const WHOLESALE_THRESHOLD = 5;
+
 export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
@@ -43,6 +45,13 @@ export async function POST(req: NextRequest) {
 
     const productMap = new Map(dbProducts.map((p) => [p._id.toString(), p]));
 
+    // 3. Server-side wholesale threshold evaluation
+    const totalPairs = items.reduce((sum: number, item: { qty: number }) => {
+      return sum + (Math.max(1, parseInt(String(item.qty), 10) || 1));
+    }, 0);
+    const isWholesale = totalPairs >= WHOLESALE_THRESHOLD;
+    const appliedPriceType: 'wholesale' | 'retail' = isWholesale ? 'wholesale' : 'retail';
+
     let calculatedSubtotal = 0;
     const validatedItems = [];
 
@@ -59,23 +68,29 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const itemQty = Math.max(1, parseInt(item.qty, 10) || 1);
-      const itemPrice = dbProd.price;
-      const itemSubtotal = itemPrice * itemQty;
+      const itemQty = Math.max(1, parseInt(String(item.qty), 10) || 1);
 
+      // Server-side price selection: use wholesalePrice when threshold reached,
+      // fall back to retailPrice, then legacy price field for older documents
+      const itemPrice = isWholesale
+        ? (dbProd.wholesalePrice ?? dbProd.retailPrice ?? dbProd.price ?? 0)
+        : (dbProd.retailPrice ?? dbProd.price ?? 0);
+
+      const itemSubtotal = itemPrice * itemQty;
       calculatedSubtotal += itemSubtotal;
 
       validatedItems.push({
         productId: dbProd._id,
         name: dbProd.name,
-        size: parseInt(item.size, 10),
+        size: parseInt(String(item.size), 10),
         qty: itemQty,
+        appliedPriceType: appliedPriceType as 'retail' | 'wholesale',
         unitPrice: itemPrice,
         subtotal: itemSubtotal,
       });
     }
 
-    // 3. Generate Sequential Order Number (PED-YYYY-XXXXX)
+    // 4. Generate Sequential Order Number (PED-YYYY-XXXXX)
     const currentYear = new Date().getFullYear();
     const countToday = await Order.countDocuments();
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
@@ -83,9 +98,10 @@ export async function POST(req: NextRequest) {
 
     const total = calculatedSubtotal;
 
-    // 4. Create and Save Pending Order
+    // 5. Create and Save Pending Order
     const newOrder = await Order.create({
       orderNumber,
+      origin: 'web',
       guest: {
         name: guest.name.trim(),
         lastName: guest.lastName.trim(),
@@ -95,7 +111,9 @@ export async function POST(req: NextRequest) {
       subtotal: calculatedSubtotal,
       discount: 0,
       total,
-      paymentMethod: paymentMethod === 'efectivo' ? 'efectivo' : 'transferencia',
+      paymentMethod: ['transferencia', 'efectivo', 'tarjeta', 'otro'].includes(paymentMethod)
+        ? paymentMethod
+        : 'transferencia',
       status: 'pendiente',
       notes: notes ? notes.trim() : '',
     });
@@ -105,6 +123,8 @@ export async function POST(req: NextRequest) {
         ok: true,
         orderId: newOrder._id.toString(),
         orderNumber: newOrder.orderNumber,
+        appliedPriceType,
+        isWholesale,
         subtotal: newOrder.subtotal,
         discount: newOrder.discount,
         total: newOrder.total,

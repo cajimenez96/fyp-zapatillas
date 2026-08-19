@@ -1,10 +1,13 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { ShoppingBag, Search, Menu, X, Phone } from 'lucide-react';
-import { useCart } from '@/context/CartContext';
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ShoppingBag, Search, Menu, X, Phone } from "lucide-react";
+import { useCart } from "@/context/CartContext";
+import { useSettings } from "@/context/SettingsContext";
+import navbarLogo from "@/assets/navbar.png";
 
 interface HeaderProps {
   onSearchChange?: (term: string) => void;
@@ -14,11 +17,14 @@ export const Header: React.FC<HeaderProps> = ({ onSearchChange }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [searchTerm, setSearchTerm] = useState(
+    searchParams.get("search") || "",
+  );
   const { totalItems, openCart } = useCart();
+  const { settings, formatPhoneNumber } = useSettings();
 
   useEffect(() => {
-    setSearchTerm(searchParams.get('search') || '');
+    setSearchTerm(searchParams.get("search") || "");
   }, [searchParams]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,32 +36,42 @@ export const Header: React.FC<HeaderProps> = ({ onSearchChange }) => {
     } else {
       const params = new URLSearchParams(searchParams.toString());
       if (value.trim()) {
-        params.set('search', value);
+        params.set("search", value);
       } else {
-        params.delete('search');
+        params.delete("search");
       }
       router.replace(`/?${params.toString()}#catalogo`);
     }
   };
 
+  const cleanPhone = settings.storePhone.replace(/[^0-9]/g, '');
+  const topBarWhatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(settings.whatsappInquiryMessage)}`;
+
   const navLinks = [
-    { label: 'Todos', href: '/#catalogo' },
-    { label: 'Hombre', href: '/?gender=Hombre#catalogo' },
-    { label: 'Mujer', href: '/?gender=Mujer#catalogo' },
-    { label: 'Niño', href: '/?gender=Niño#catalogo' },
-    { label: 'Unisex', href: '/?gender=Unisex#catalogo' },
+    { label: "Todos", href: "/#catalogo" },
+    { label: "Hombre", href: "/?gender=Hombre#catalogo" },
+    { label: "Mujer", href: "/?gender=Mujer#catalogo" },
+    { label: "Niño", href: "/?gender=Niño#catalogo" },
+    { label: "Unisex", href: "/?gender=Unisex#catalogo" },
   ];
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-[#e5e5e5]">
-      {/* 1. Utility Top Bar */}
+      {/* 1. Utility Top Bar with dynamic Settings */}
       <div className="bg-[#f5f5f5] text-[#111111] text-xs py-1.5 px-4 sm:px-8 flex justify-between items-center font-medium border-b border-[#e5e5e5]">
-        <div className="flex items-center gap-2">
+        <a
+          href={topBarWhatsappUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+        >
           <Phone className="w-3.5 h-3.5 text-[#007d48]" />
-          <span>Atención WhatsApp: <strong>+54 9 381 521-8630</strong></span>
-        </div>
+          <span>
+            Atención WhatsApp: <strong>{formatPhoneNumber(settings.storePhone)}</strong>
+          </span>
+        </a>
         <div className="hidden md:flex gap-4 text-[#707072]">
-          <span>Envíos a todo el país</span>
+          <span>{settings.shippingInfo || 'Envíos a todo el país en 24hs'}</span>
           <span>•</span>
           <span>Catálogo Directo</span>
         </div>
@@ -70,13 +86,20 @@ export const Header: React.FC<HeaderProps> = ({ onSearchChange }) => {
             className="md:hidden p-2 rounded-full hover:bg-[#f5f5f5] transition-colors cursor-pointer"
             aria-label="Abrir menú"
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
           </button>
 
-          <Link href="/" className="flex items-center gap-2 group cursor-pointer">
-            <span className="font-extrabold text-2xl tracking-tighter text-[#111111] uppercase font-sans group-hover:opacity-80 transition-opacity">
-              FP <span className="font-light text-[#707072]">Zapatillas</span>
-            </span>
+          <Link href="/" className="flex items-center group cursor-pointer">
+            <Image
+              src={navbarLogo}
+              alt={settings.storeName || "FP Zapatillas"}
+              className="h-12 w-xs mt-4 object-cover group-hover:opacity-80 transition-opacity"
+              priority
+            />
           </Link>
         </div>
 

@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/lib/db';
 import Product from '@/models/Product';
 import Brand from '@/models/Brand';
 import FootwearType from '@/models/FootwearType';
+import Settings from '@/models/Settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,10 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search');
     const lowStockOnly = searchParams.get('lowStock') === 'true';
+
+    // Retrieve configured minimum stock alert threshold
+    const settings = await Settings.findOne({}).lean();
+    const minStockAlert = settings?.minStockAlert !== undefined ? settings.minStockAlert : 3;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const query: Record<string, any> = {};
@@ -34,8 +39,9 @@ export async function GET(req: NextRequest) {
 
     let totalPairsInStock = 0;
     let outOfStockProductsCount = 0;
+    let lowStockProductsCount = 0;
 
-    // Process products with detailed stock metrics
+    // Process products with detailed stock metrics based on TOTAL PAIRS per product
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const stockItems = products.map((prod: any) => {
       const sizesStock = prod.sizesStock || [];
@@ -45,11 +51,14 @@ export async function GET(req: NextRequest) {
       );
 
       totalPairsInStock += totalStock;
-      if (totalStock === 0) outOfStockProductsCount++;
+      if (totalStock === 0) {
+        outOfStockProductsCount++;
+      } else if (totalStock <= minStockAlert) {
+        lowStockProductsCount++;
+      }
 
-      const lowStockSizes = sizesStock.filter(
-        (s: { stock: number }) => s.stock > 0 && s.stock < 3
-      );
+      // Evaluated strictly on the TOTAL amount of pairs for this product
+      const hasLowStock = totalStock <= minStockAlert;
 
       return {
         _id: prod._id,
@@ -57,12 +66,14 @@ export async function GET(req: NextRequest) {
         brandName: typeof prod.brandId === 'object' && prod.brandId ? prod.brandId.name : '-',
         typeName: typeof prod.typeId === 'object' && prod.typeId ? prod.typeId.name : '-',
         gender: prod.gender,
-        price: prod.price,
+        price: prod.retailPrice ?? prod.price ?? 0,
+        retailPrice: prod.retailPrice ?? prod.price ?? 0,
+        wholesalePrice: prod.wholesalePrice ?? prod.price ?? 0,
         active: prod.active,
         image: prod.images?.[0]?.url || '',
         totalStock,
         sizesStock,
-        hasLowStock: lowStockSizes.length > 0 || totalStock === 0,
+        hasLowStock,
       };
     });
 
@@ -76,6 +87,8 @@ export async function GET(req: NextRequest) {
         totalPairsInStock,
         totalProductsCount: products.length,
         outOfStockProductsCount,
+        lowStockProductsCount,
+        minStockAlert,
         items: filteredStockItems,
       },
     });

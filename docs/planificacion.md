@@ -13,7 +13,7 @@ Como Scrum Master y Senior Architect, este proyecto se estructurará bajo un **T
 - [ ] Componentes de UI verificados contra los tokens y estética definida en [DESIGN.md](file:///Users/carlosjimenez/Documents/Repositorios/e-commerce/docs/DESIGN.md).
 - [ ] Schemas y contratos de API validados con Zod.
 - [ ] Pruebas unitarias/funcionales ejecutadas exitosamente.
-- [ ] Documentación de código y APIs al día.
+- [ ] Documentación de código y APIs al día (producto y arquitectura).
 
 ---
 
@@ -47,20 +47,20 @@ Como Scrum Master y Senior Architect, este proyecto se estructurará bajo un **T
 ---
 
 ### 📌 EPIC 2: Modelos de Datos & Sembrado (Seed)
-* **[T-04] Implementación de Modelos Mongoose (Brands, Types, Products)**
+* **[T-04] Modelo Mongoose de Producto con Doble Precio (`Product`)**
   - **Prioridad:** Alta | **Estimación:** 3 pts
-  - **Descripción:** Definir esquemas Mongoose para `Brand`, `FootwearType` y `Product` según [arquitectura.md](file:///Users/carlosjimenez/Documents/Repositorios/e-commerce/arquitectura.md).
-  - **Criterios de Aceptación:** Schemas compilados con índices únicos y validaciones de tipos.
+  - **Descripción:** Definir esquema Mongoose para `Product` incluyendo campos independientes `retailPrice` y `wholesalePrice`, marcas, tipos y stock por talle según [arquitectura.md](file:///Users/carlosjimenez/Documents/Repositorios/e-commerce/docs/arquitectura.md).
+  - **Criterios de Aceptación:** Schema compilado con campos `retailPrice` y `wholesalePrice` requeridos, e índices únicos configurados.
 
-* **[T-05] Implementación de Modelos Mongoose (Orders, SalesRecords, Promotions)**
+* **[T-05] Modelos Mongoose para Órdenes, Histórico & Promociones (`Order`, `SalesRecord`, `Promotion`)**
   - **Prioridad:** Alta | **Estimación:** 3 pts
-  - **Descripción:** Definir esquemas Mongoose para `Order`, `SalesRecord` y `Promotion`.
-  - **Criterios de Aceptación:** Soporte para ítems embebidos, estados de orden y números de pedido formateados.
+  - **Descripción:** Definir esquemas Mongoose para `Order` (con estados `pendiente` | `autorizado` | `cancelado`, origen `web` | `admin_direct` e ítems con `appliedPriceType`), `SalesRecord` y `Promotion`.
+  - **Criterios de Aceptación:** Soporte para ítems embebidos, estados de orden y números de pedido secuenciales.
 
-* **[T-06] Script de Seeding para Catálogos Base**
+* **[T-06] Script de Seeding para Catálogos Base con Doble Precio**
   - **Prioridad:** Media | **Estimación:** 2 pts
-  - **Descripción:** Crear script para poblar la base de datos con Marcas (Nike, Adidas, Puma), Tipos de Calzado (Running, Urbana) y Géneros iniciales.
-  - **Criterios de Aceptación:** Ejecutar `npm run seed` inserta datos iniciales limpios sin duplicados.
+  - **Descripción:** Crear script para poblar la base de datos con Marcas (Nike, Adidas, Puma), Tipos de Calzado y Productos iniciales configurando precios minoristas y mayoristas.
+  - **Criterios de Aceptación:** `npm run seed` inserta datos iniciales limpios con ambos precios configurados.
 
 ---
 
@@ -70,146 +70,146 @@ Como Scrum Master y Senior Architect, este proyecto se estructurará bajo un **T
   - **Descripción:** Maquetar Header con logo, barra de búsqueda e ícono de carrito, y Footer informativo siguiendo [DESIGN.md](file:///Users/carlosjimenez/Documents/Repositorios/e-commerce/docs/DESIGN.md).
   - **Criterios de Aceptación:** Layout responsive, accesible y pixel-perfect según diseño Nike-editorial.
 
-* **[T-08] Carrusel de Promociones (Banners)**
+* **[T-08] Carrusel de Promociones (Banners con Info Mayorista)**
   - **Prioridad:** Media | **Estimación:** 3 pts
-  - **Descripción:** Componente de carrusel hero para banners activos consumiendo la API de promociones.
-  - **Criterios de Aceptación:** Navegación fluida, soporte swipe en mobile, fallbacks sin banners.
+  - **Descripción:** Componente de carrusel hero para banners activos informando promociones y el beneficio de precio mayorista (5+ pares).
+  - **Criterios de Aceptación:** Navegación fluida, soporte swipe en mobile.
 
-* **[T-09] Grilla de Productos y Tarjetas (Product Card)**
+* **[T-09] Grilla de Productos y Tarjetas con Doble Precio (`ProductCard`)**
   - **Prioridad:** Alta | **Estimación:** 3 pts
-  - **Descripción:** Componente `ProductCard` con imagen en fondo `#f5f5f5`, marca, nombre, precio, etiqueta "SIN STOCK" y swatches.
-  - **Criterios de Aceptación:** Renderizado de productos según estado `active`, indicación correcta de falta de stock.
+  - **Descripción:** Componente `ProductCard` exhibiendo **Precio Minorista** y **Precio Mayorista**, imagen en fondo `#f5f5f5`, marca, nombre y etiqueta de stock.
+  - **Criterios de Aceptación:** Visualización clara de ambos precios y badge indicativo del umbral mayorista.
 
 * **[T-10] Barra de Filtros (Marca, Tipo, Talle)**
   - **Prioridad:** Alta | **Estimación:** 3 pts
   - **Descripción:** Componente de filtros multiselect por Marca, Tipo de Calzado y Talle con actualización de query params y llamada a API.
-  - **Criterios de Aceptación:** Filtrado instantáneo/reactivo en frontend y sincronizado con URL.
+  - **Criterios de Aceptación:** Filtrado reactivo en frontend y sincronizado con la URL.
 
 ---
 
-### 📌 EPIC 4: Detalle de Producto & Estado de Carrito
-* **[T-11] Modal / Vista de Detalle de Producto (PDP)**
+### 📌 EPIC 4: Detalle de Producto & Carrito Dinámico (5+ Pares)
+* **[T-11] Vista de Detalle de Producto (PDP / Modal)**
   - **Prioridad:** Alta | **Estimación:** 3 pts
-  - **Descripción:** Galería de imágenes, selector de talles disponibles según género, selector de cantidad y botón "Agregar al carrito".
-  - **Criterios de Aceptación:** Bloqueo de talles sin stock, selector de cantidad restringido al stock disponible.
+  - **Descripción:** Muestra detallada del producto con visualización de precio minorista y mayorista, selector de talle disponible y selector de cantidad.
+  - **Criterios de Aceptación:** Explicación visual de que el precio mayorista aplica al sumar 5 pares o más en el carrito.
 
-* **[T-12] Estado Global del Carrito (Context / Store)**
-  - **Prioridad:** Alta | **Estimación:** 2 pts
-  - **Descripción:** Gestor de estado para agregar, modificar cantidades, eliminar ítems y persistir en `localStorage`.
-  - **Criterios de Aceptación:** Carrito persiste recargas de página y calcula totales dinámicamente.
+* **[T-12] Carrito Global con Recálculo Dinámico de Precio Mayorista (`CartContext` & `CartDrawer`)**
+  - **Prioridad:** Alta | **Estimación:** 4 pts
+  - **Descripción:** Gestor de estado del carrito que cuenta la suma total de pares ($\ge 5$) y recalcula automáticamente todo el carrito pasando cada producto a `wholesalePrice`. Incluye barra de progreso visual.
+  - **Criterios de Aceptación:** Si `totalPairs < 5` se aplica `retailPrice`; si `totalPairs >= 5` todos los ítems cambian a `wholesalePrice` en tiempo real. Persistencia en `localStorage`.
 
 ---
 
 ### 📌 EPIC 5: Checkout Epicodes en 3 Pasos & WhatsApp
 * **[T-13] Checkout Paso 1: Formulario "Tus Datos"**
   - **Prioridad:** Alta | **Estimación:** 2 pts
-  - **Descripción:** Vista del Paso 1 para capturar Nombre, Apellido y Teléfono (sin campo email obligatorio).
-  - **Criterios de Aceptación:** Validaciones Zod de campos requeridos y formato de teléfono.
+  - **Descripción:** Captura de Nombre, Apellido y Teléfono WhatsApp (sin email).
+  - **Criterios de Aceptación:** Validación Zod de campos requeridos.
 
 * **[T-14] Checkout Paso 2: Revisión de Pedido & Endpoint `/api/checkout/create-order`**
   - **Prioridad:** Alta | **Estimación:** 5 pts
-  - **Descripción:** Vista de confirmación del pedido y desarrollo del endpoint serverless que calcula precios reales, inserta orden `pendiente` y retorna el `orderNumber`.
-  - **Criterios de Aceptación:** Precios validados en servidor, generación única de `orderNumber` (ej: `PED-2026-06810`).
+  - **Descripción:** Vista de revisión y desarrollo de API serverless que valida server-side la cantidad total de pares ($\ge 5$) para aplicar `wholesalePrice` o `retailPrice` de forma segura, insertando la orden en estado `pendiente`.
+  - **Criterios de Aceptación:** Asignación server-side inmanipulable del tipo de precio y generación de `orderNumber`.
 
-* **[T-15] Checkout Paso 3: Pantalla de Pago & Generador de Link WhatsApp**
+* **[T-15] Checkout Paso 3: Confirmación & Link WhatsApp con Indicador Mayorista**
   - **Prioridad:** Alta | **Estimación:** 3 pts
-  - **Descripción:** Muestra datos bancarios (Alias, CBU, Titular) con botón copiar y botón destacado verde de envío de resumen a WhatsApp.
-  - **Criterios de Aceptación:** Botón verde abre WhatsApp con mensaje preformateado conteniendo cliente, ítems, total y número de orden.
+  - **Descripción:** Pantalla de confirmación con datos bancarios y generador de URL WhatsApp con badge de precio aplicado.
+  - **Criterios de Aceptación:** Abre WhatsApp con mensaje preformateado conteniendo cliente, productos, total e indicador si aplicó mayorista.
 
 ---
 
 ### 📌 EPIC 6: Panel Administrador - Autenticación & Catálogos
 * **[T-16] Autenticación de Administrador (Login & Protected Routes)**
   - **Prioridad:** Alta | **Estimación:** 3 pts
-  - **Descripción:** Formulario de login admin y middleware de protección para rutas `/admin/*` y `/api/admin/*` vía JWT.
-  - **Criterios de Aceptación:** Accesos no autorizados redirigen a login.
+  - **Descripción:** Formulario de login admin y middleware JWT para rutas `/admin/*` y `/api/admin/*`.
+  - **Criterios de Aceptación:** Rutas protegidas contra acceso no autorizado.
 
 * **[T-17] Gestión de Marcas (ABM Admin)**
   - **Prioridad:** Media | **Estimación:** 2 pts
-  - **Descripción:** CRUD simple para crear, editar y listar marcas (solo nombre).
-  - **Criterios de Aceptación:** Imposibilidad de eliminar marcas asociadas a productos existentes.
+  - **Descripción:** CRUD para crear, editar y listar marcas.
+  - **Criterios de Aceptación:** Bloqueo de eliminación de marcas con productos asociados.
 
 * **[T-18] Gestión de Tipos de Calzado (ABM Admin)**
   - **Prioridad:** Media | **Estimación:** 2 pts
-  - **Descripción:** CRUD para administrar tipos de calzado.
-  - **Criterios de Aceptación:** Validación de nombres únicos.
-
-* **[T-19] Gestión de Promociones / Banners (ABM Admin)**
-  - **Prioridad:** Media | **Estimación:** 3 pts
-  - **Descripción:** Formulario de subida de banner, título, vigencia y orden para el carrusel principal.
-  - **Criterios de Aceptación:** Reordenamiento drag-and-drop o por índice numérico.
+  - **Descripción:** CRUD para tipos de calzado.
+  - **Criterios de Aceptación:** Nombres únicos requeridos.
 
 ---
 
-### 📌 EPIC 7: Panel Administrador - Productos & Stock
-* **[T-20] Formulario de Creación de Producto**
+### 📌 EPIC 7: Panel Administrador - Productos & Importación Masiva
+* **[T-20] Formulario de Alta de Producto con Doble Precio**
   - **Prioridad:** Alta | **Estimación:** 5 pts
-  - **Descripción:** Formulario completo para alta de producto: Nombre, Descripción, Precio, Marca, Tipo, Género, subida de imágenes a CDN y matriz de stock por talle.
-  - **Criterios de Aceptación:** Carga dinámica de talles según género elegido, subida correcta de imágenes.
+  - **Descripción:** Formulario completo de producto incluyendo inputs independientes para `precioMinorista` y `precioMayorista`, imágenes CDN y matriz de stock por talle.
+  - **Criterios de Aceptación:** Guardado correcto de ambos precios en MongoDB.
 
-* **[T-21] Edición & Desactivación de Productos**
+* **[T-21] Edición & Estado de Productos**
   - **Prioridad:** Alta | **Estimación:** 3 pts
-  - **Descripción:** Permite editar precio, imágenes, stock o cambiar estado `activo/inactivo`. Marca, Tipo y Género bloqueados.
-  - **Criterios de Aceptación:** Atributos fijos ineditables, actualización inmediata en catálogo cliente al desactivar.
+  - **Descripción:** Edición de ambos precios, imágenes y stock, o cambio a `activo/inactivo`.
+  - **Criterios de Aceptación:** Atributos de Marca/Tipo/Género inmutables post-creación.
 
-* **[T-22] Importador Masivo de Stock mediante CSV**
+* **[T-22] Importador Masivo CSV con Precios Minorista y Mayorista**
   - **Prioridad:** Media | **Estimación:** 5 pts
-  - **Descripción:** Upload y parser de archivo CSV para carga masiva de productos e inventario inicial.
-  - **Criterios de Aceptación:** Reporte detallado de filas procesadas con éxito y lista de errores de validación.
+  - **Descripción:** Upload y parser de CSV con columnas `nombre,marca,tipo_calzado,genero,precio_minorista,precio_mayorista,descripcion,talle,stock`.
+  - **Criterios de Aceptación:** Carga y actualización atómica reportando errores por fila.
 
 ---
 
-### 📌 EPIC 8: Panel Administrador - Ventas & Reducción de Stock
-* **[T-23] Listado de Solicitudes Pendientes**
+### 📌 EPIC 8: Panel Administrador - Gestión de Pedidos, Edición & Punto de Venta (POS)
+* **[T-23] Listado de Pedidos Web Pendientes**
   - **Prioridad:** Alta | **Estimación:** 3 pts
-  - **Descripción:** Tabla responsiva de solicitudes pendientes con buscador y acciones (Ver detalle, Confirmar, Cancelar).
-  - **Criterios de Aceptación:** Filtros por fecha y nombre de cliente.
+  - **Descripción:** Tabla responsiva de pedidos web en estado `pendiente` con filtros y acciones (Ver/Editar, Autorizar, Cancelar).
+  - **Criterios de Aceptación:** Visualización clara de origen (`web`), cliente y total.
 
-* **[T-24] Modal de Edición de Ítems en Solicitud Pendiente**
-  - **Prioridad:** Media | **Estimación:** 3 pts
-  - **Descripción:** Permite al admin agregar/quitar productos o ajustar cantidades antes de confirmar la venta.
-  - **Criterios de Aceptación:** Recálculo automático de subtotales y total.
+* **[T-24] Modal de Edición de Pedido Pendiente (`PUT /api/admin/orders/:id`)**
+  - **Prioridad:** Alta | **Estimación:** 4 pts
+  - **Descripción:** Modal que permite al admin agregar/quitar ítems, cambiar talles, modificar cantidades o sobrescribir el precio final del pedido negociado antes de autorizar.
+  - **Criterios de Aceptación:** Modificación guardada en orden `pendiente` sin tocar stock.
 
-* **[T-25] Confirmación de Venta & Transacción Atómica de Stock (`POST /api/admin/orders/:id/confirm`)**
+* **[T-25] Autorización de Pedido Pendiente & Descuento de Stock (`POST /api/admin/orders/:id/authorize`)**
   - **Prioridad:** Alta | **Estimación:** 5 pts
-  - **Descripción:** Modal de confirmación donde el admin selecciona Medio de Pago e ingresa Nota de Descuento. Dispara transacción MongoDB que descuenta stock.
-  - **Criterios de Aceptación:** Error `409 Conflict` si no hay stock suficiente, decremento atómico de stock y creación de `SalesRecord`.
+  - **Descripción:** Modal de confirmación donde el admin selecciona Medio de Pago e ingresa Descuento. Pasa el estado a `autorizado` y ejecuta la transacción MongoDB que descuenta stock por talle.
+  - **Criterios de Aceptación:** Estado cambia a `autorizado`, stock decrementado atómicamente, `SalesRecord` creado.
 
-* **[T-26] Cancelación de Solicitudes**
+* **[T-25B] Registro de Venta Directa Admin / Punto de Venta (`POST /api/admin/sales/create-direct`)**
+  - **Prioridad:** Alta | **Estimación:** 5 pts
+  - **Descripción:** Pantalla de Punto de Venta (POS) para registrar ventas directas en panel admin ingresando cliente y seleccionando productos. Se guarda directamente como `autorizado` y descuenta el stock en tiempo real.
+  - **Criterios de Aceptación:** Venta creada con `origin: "admin_direct"`, `status: "autorizado"` y stock decrementado inmediatamente (stock único real).
+
+* **[T-26] Cancelación de Pedidos**
   - **Prioridad:** Media | **Estimación:** 2 pts
-  - **Descripción:** Opción para rechazar/cancelar solicitudes marcando el estado a `cancelada`.
-  - **Criterios de Aceptación:** La orden cambia de estado sin afectar el inventario.
+  - **Descripción:** Acción para pasar orden a estado `cancelado` sin modificar el inventario.
+  - **Criterios de Aceptación:** Orden marcada como cancelada.
 
 ---
 
-### 📌 EPIC 9: Reportes, Métricas & Configuración
+### 📌 EPIC 9: Reportes & Configuración
 * **[T-27] Dashboard de Ventas & Reportes**
   - **Prioridad:** Media | **Estimación:** 4 pts
-  - **Descripción:** Vista con resumen de ingresos totales, cantidad de ventas, ventas por medio de pago y exportador a CSV/Excel.
-  - **Criterios de Aceptación:** Filtro por rango de fechas, archivo descargable válido.
+  - **Descripción:** Métricas de ingresos totales, ventas por medio de pago (web vs directo) y exportador CSV/Excel.
+  - **Criterios de Aceptación:** Filtros por rango de fecha y descarga de archivo.
 
 * **[T-28] Panel de Configuración de la Tienda**
   - **Prioridad:** Media | **Estimación:** 2 pts
-  - **Descripción:** Formulario admin para editar número de WhatsApp de la tienda, datos bancarios (Alias/CBU) y nombre del negocio.
-  - **Criterios de Aceptación:** Los cambios impactan inmediatamente en la vista de checkout del cliente.
+  - **Descripción:** Edición de número de WhatsApp, datos bancarios y nombre del negocio.
+  - **Criterios de Aceptación:** Actualización inmediata en el checkout del cliente.
 
 ---
 
 ### 📌 EPIC 10: QA, Auditoría UI & Despliegue
 * **[T-29] Audit de Diseño & UI contra `DESIGN.md`**
   - **Prioridad:** Alta | **Estimación:** 2 pts
-  - **Descripción:** Revisión de contraste tipográfico, paleta de colores, radios `rounded-full` y comportamientos en mobile.
-  - **Criterios de Aceptación:** 100% alineado a las directrices visuales del sistema de diseño Nike.
+  - **Descripción:** Verificación de contraste, tipografías y botones pill en mobile y desktop.
+  - **Criterios de Aceptación:** 100% conforme a guías de diseño.
 
-* **[T-30] Pruebas Integrales E2E del Flujo de Venta**
+* **[T-30] Pruebas Integrales E2E (Flujo Web & Venta Directa Admin)**
   - **Prioridad:** Alta | **Estimación:** 3 pts
-  - **Descripción:** Verificación del camino crítico: Selección producto $\rightarrow$ Checkout 3 Pasos $\rightarrow$ WhatsApp $\rightarrow$ Confirmación Admin $\rightarrow$ Reducción de Stock.
-  - **Criterios de Aceptación:** Cero errores en consola, comportamiento atómico de stock.
+  - **Descripción:** Pruebas del circuito completo: Compra Web (menor a 5 pares y mayor o igual a 5 pares) $\rightarrow$ WhatsApp $\rightarrow$ Autorización Admin $\rightarrow$ Venta Directa POS Admin $\rightarrow$ Verificación de Stock.
+  - **Criterios de Aceptación:** Cero errores de concurrencia en stock y aplicación impecable de precios.
 
 * **[T-31] Despliegue en Producción (Vercel + MongoDB Atlas)**
   - **Prioridad:** Alta | **Estimación:** 2 pts
-  - **Descripción:** Configuración de variables de entorno, compilación de build de producción y despliegue final.
-  - **Criterios de Aceptación:** Aplicación desplegada y 100% operativa en producción.
+  - **Descripción:** Configuración de variables de entorno y despliegue final.
+  - **Criterios de Aceptación:** App activa y funcional en producción.
 
 ---
 ---
@@ -218,14 +218,7 @@ Como Scrum Master y Senior Architect, este proyecto se estructurará bajo un **T
 
 ## 1. SCRUM MASTER VISION & METHODOLOGY
 
-As Scrum Master and Senior Architect, this project will follow a **Kanban Board with Work in Progress (WIP) Limits** to ensure continuous flow, verified incremental deliveries, and zero technical debt.
-
-### Definition of Done (DoD):
-- [ ] Code implemented with zero linter/TypeScript errors.
-- [ ] UI components verified against design tokens and aesthetics in [DESIGN.md](file:///Users/carlosjimenez/Documents/Repositorios/e-commerce/docs/DESIGN.md).
-- [ ] Schemas and API contracts validated using Zod.
-- [ ] Unit/functional tests executed successfully.
-- [ ] Up-to-date documentation.
+Project structured under a **Kanban Board with Work in Progress (WIP) Limits**.
 
 ---
 
@@ -238,55 +231,27 @@ As Scrum Master and Senior Architect, this project will follow a **Kanban Board 
 
 ---
 
-## 3. EPICS AND TICKET BREAKDOWN
-
-### 📌 EPIC 1: Initial Setup & Base Infrastructure
-* **[T-01] Next.js Project Initialization & Styling Setup** (High | 2 pts)
-* **[T-02] MongoDB Connection & Configuration** (High | 2 pts)
-* **[T-03] Image CDN Helper Client (ImageKit / Cloudinary)** (Medium | 1 pt)
+## 3. EPICS AND TICKET BREAKDOWN SUMMARY
 
 ### 📌 EPIC 2: Data Models & Seeding
-* **[T-04] Mongoose Models (Brands, Types, Products)** (High | 3 pts)
-* **[T-05] Mongoose Models (Orders, SalesRecords, Promotions)** (High | 3 pts)
-* **[T-06] Seeding Script for Initial Catalog Data** (Medium | 2 pts)
+* **[T-04] Dual-Price Product Model (`Product`)** (High | 3 pts) - Includes `retailPrice` and `wholesalePrice`.
+* **[T-05] Order, SalesRecord & Promotion Models** (High | 3 pts) - Order status (`pendiente`, `autorizado`, `cancelado`) and origin (`web`, `admin_direct`).
+* **[T-06] Seeding Script with Dual Pricing** (Medium | 2 pts)
 
 ### 📌 EPIC 3: Customer Catalog & Landing Page
-* **[T-07] General Layout (Header, Footer & Navigation)** (High | 2 pts)
-* **[T-08] Promotions Banner Carousel** (Medium | 3 pts)
-* **[T-09] Product Grid & Product Card Component** (High | 3 pts)
-* **[T-10] Filter Bar (Brand, Type, Size)** (High | 3 pts)
+* **[T-09] Dual-Price Product Grid & Cards (`ProductCard`)** (High | 3 pts)
 
-### 📌 EPIC 4: Product Detail & Cart State
-* **[T-11] Product Detail View / Modal (PDP)** (High | 3 pts)
-* **[T-12] Global Cart State Management (Context / Store)** (High | 2 pts)
+### 📌 EPIC 4: Product Detail & Dynamic Cart (5+ Pairs)
+* **[T-12] Dynamic Cart Wholesale Repricing (`CartContext` & `CartDrawer`)** (High | 4 pts) - Reprices all items to `wholesalePrice` when total pairs $\ge 5$.
 
-### 📌 EPIC 5: Epicodes 3-Step Checkout & WhatsApp Integration
-* **[T-13] Checkout Step 1: "Your Data" Form** (High | 2 pts)
-* **[T-14] Checkout Step 2: Order Review & `/api/checkout/create-order`** (High | 5 pts)
-* **[T-15] Checkout Step 3: Payment Screen & WhatsApp Link Generator** (High | 3 pts)
+### 📌 EPIC 5: 3-Step Checkout & WhatsApp
+* **[T-14] Checkout Server Validation (`/api/checkout/create-order`)** (High | 5 pts) - Server-side validation of 5+ pair threshold for safe wholesale pricing.
 
-### 📌 EPIC 6: Admin Panel - Auth & Catalogs
-* **[T-16] Admin Authentication (Login & Protected Routes)** (High | 3 pts)
-* **[T-17] Brand Management (Admin CRUD)** (Medium | 2 pts)
-* **[T-18] Footwear Type Management (Admin CRUD)** (Medium | 2 pts)
-* **[T-19] Promotion & Banner Management (Admin CRUD)** (Medium | 3 pts)
+### 📌 EPIC 7: Admin Panel - Products & Bulk CSV
+* **[T-20] Dual-Price Product Creation Form** (High | 5 pts)
+* **[T-22] Bulk CSV Importer with Dual Pricing** (Medium | 5 pts)
 
-### 📌 EPIC 7: Admin Panel - Products & Stock
-* **[T-20] Product Creation Form** (High | 5 pts)
-* **[T-21] Product Editing & Deactivation** (High | 3 pts)
-* **[T-22] CSV Bulk Stock Inventory Importer** (Medium | 5 pts)
-
-### 📌 EPIC 8: Admin Panel - Sales & Stock Reduction
-* **[T-23] Pending Sales Requests List** (High | 3 pts)
-* **[T-24] Edit Items Modal in Pending Requests** (Medium | 3 pts)
-* **[T-25] Sale Confirmation & Atomic Stock Transaction (`POST /api/admin/orders/:id/confirm`)** (High | 5 pts)
-* **[T-26] Order Cancellation** (Medium | 2 pts)
-
-### 📌 EPIC 9: Reports, Metrics & Store Settings
-* **[T-27] Sales Dashboard & Reports** (Medium | 4 pts)
-* **[T-28] Store Settings Panel** (Medium | 2 pts)
-
-### 📌 EPIC 10: QA, UI Audit & Deployment
-* **[T-29] UI Audit against `DESIGN.md`** (High | 2 pts)
-* **[T-30] End-to-End Sales Flow Integration Testing** (High | 3 pts)
-* **[T-31] Production Deployment (Vercel + MongoDB Atlas)** (High | 2 pts)
+### 📌 EPIC 8: Admin Panel - Sales, Order Edits & Direct POS
+* **[T-24] Pending Order Edit Modal (`PUT /api/admin/orders/:id`)** (High | 4 pts) - Modify items/prices without touching stock.
+* **[T-25] Order Authorization & Atomic Stock Reduction (`POST /api/admin/orders/:id/authorize`)** (High | 5 pts)
+* **[T-25B] Direct Admin POS Sales (`POST /api/admin/sales/create-direct`)** (High | 5 pts) - Direct sales saved as `autorizado` with instant stock deduction.

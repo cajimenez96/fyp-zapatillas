@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, MessageSquare, Check, Ban, Clock, Loader2 } from 'lucide-react';
+import { X, MessageSquare, Check, Ban, Clock, Loader2, ShieldCheck, Edit3 } from 'lucide-react';
 import { OrderStatus } from '@/models/Order';
 
 export interface AdminOrderItem {
@@ -9,7 +9,8 @@ export interface AdminOrderItem {
   orderNumber: string;
   createdAt: string;
   status: OrderStatus;
-  paymentMethod: 'transferencia' | 'efectivo';
+  origin?: 'web' | 'admin_direct';
+  paymentMethod: 'transferencia' | 'efectivo' | 'tarjeta' | 'otro';
   subtotal: number;
   discount: number;
   total: number;
@@ -24,6 +25,7 @@ export interface AdminOrderItem {
     name: string;
     size: number;
     qty: number;
+    appliedPriceType?: 'retail' | 'wholesale' | 'custom';
     unitPrice: number;
     subtotal: number;
   }>;
@@ -32,15 +34,36 @@ export interface AdminOrderItem {
 interface OrderDetailModalProps {
   order: AdminOrderItem | null;
   onClose: () => void;
-  onStatusChange: (id: string, newStatus: OrderStatus) => Promise<void>;
+  onAuthorize: (id: string, paymentMethod: string) => Promise<void>;
+  onCancel: (id: string) => Promise<void>;
+  onEdit: (order: AdminOrderItem) => void;
 }
+
+const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
+  pendiente: { bg: 'bg-[#f59e0b]', text: 'text-white', label: 'PENDIENTE' },
+  autorizado: { bg: 'bg-[#007d48]', text: 'text-white', label: 'AUTORIZADO' },
+  cancelado: { bg: 'bg-[#d30005]', text: 'text-white', label: 'CANCELADO' },
+  // Legacy statuses
+  completada: { bg: 'bg-[#007d48]', text: 'text-white', label: 'COMPLETADA' },
+  confirmada: { bg: 'bg-[#007d48]', text: 'text-white', label: 'CONFIRMADA' },
+  cancelada: { bg: 'bg-[#d30005]', text: 'text-white', label: 'CANCELADA' },
+};
+
+const PRICE_TYPE_LABELS: Record<string, string> = {
+  retail: 'Minorista',
+  wholesale: 'Mayorista',
+  custom: 'Precio acordado',
+};
 
 export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
   order,
   onClose,
-  onStatusChange,
+  onAuthorize,
+  onCancel,
+  onEdit,
 }) => {
   const [updating, setUpdating] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('efectivo');
 
   if (!order) return null;
 
@@ -49,10 +72,23 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
     `¡Hola ${order.guest.name}! Te escribimos de FP Zapatillas respecto a tu solicitud #${order.orderNumber}.`
   )}`;
 
-  const handleUpdateStatus = async (newStatus: OrderStatus) => {
+  const statusInfo = STATUS_COLORS[order.status] ?? STATUS_COLORS['pendiente'];
+  const isPending = order.status === 'pendiente';
+  const isFinalized = ['autorizado', 'cancelado', 'completada', 'cancelada'].includes(order.status);
+
+  const handleAuthorize = async () => {
     setUpdating(true);
     try {
-      await onStatusChange(order._id, newStatus);
+      await onAuthorize(order._id, paymentMethod);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    setUpdating(true);
+    try {
+      await onCancel(order._id);
     } finally {
       setUpdating(false);
     }
@@ -64,7 +100,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-[#111111] bg-[#f5f5f5] hover:bg-[#111111] hover:text-white rounded-full transition-colors z-10"
+          className="absolute top-4 right-4 p-2 text-[#111111] bg-[#f5f5f5] hover:bg-[#111111] hover:text-white rounded-full transition-colors z-10 cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -76,19 +112,16 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
               Solicitud #{order.orderNumber}
             </h2>
 
-            {order.status === 'pendiente' && (
-              <span className="bg-[#f59e0b] text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                <Clock className="w-3 h-3" /> PENDIENTE
-              </span>
-            )}
-            {order.status === 'completada' && (
-              <span className="bg-[#007d48] text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                <Check className="w-3 h-3" /> COMPLETADA
-              </span>
-            )}
-            {order.status === 'cancelada' && (
-              <span className="bg-[#d30005] text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                <Ban className="w-3 h-3" /> CANCELADA
+            <span className={`${statusInfo.bg} ${statusInfo.text} text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1`}>
+              {order.status === 'autorizado' ? <ShieldCheck className="w-3 h-3" /> :
+               order.status === 'pendiente' ? <Clock className="w-3 h-3" /> :
+               <Ban className="w-3 h-3" />}
+              {statusInfo.label}
+            </span>
+
+            {order.origin === 'admin_direct' && (
+              <span className="bg-[#111111] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                VENTA DIRECTA
               </span>
             )}
           </div>
@@ -123,7 +156,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
         {/* Order Items Table */}
         <div className="space-y-2">
           <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#111111]">
-            Desglose de Calzado Solicitado ({order.items.length})
+            Desglose de Calzado Solicitado ({order.items.length} líneas)
           </h3>
           <div className="border border-[#e5e5e5] bg-[#f5f5f5] divide-y divide-[#e5e5e5]">
             {order.items.map((item, idx) => (
@@ -132,17 +165,43 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                   <h5 className="font-bold text-[#111111]">{item.name}</h5>
                   <p className="text-[#707072]">
                     Talle: <strong className="text-[#111111]">{item.size}</strong> • Cantidad: <strong className="text-[#111111]">{item.qty}</strong>
+                    {item.appliedPriceType && (
+                      <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        item.appliedPriceType === 'wholesale'
+                          ? 'bg-[#007d48]/10 text-[#007d48]'
+                          : item.appliedPriceType === 'custom'
+                          ? 'bg-[#f59e0b]/10 text-[#f59e0b]'
+                          : 'bg-[#f5f5f5] text-[#707072]'
+                      }`}>
+                        {PRICE_TYPE_LABELS[item.appliedPriceType]}
+                      </span>
+                    )}
                   </p>
                 </div>
                 <div className="text-right font-extrabold text-[#111111]">
                   ${item.subtotal.toLocaleString('es-AR')}
+                  <span className="block text-[10px] font-medium text-[#707072]">
+                    ${item.unitPrice.toLocaleString('es-AR')} c/u
+                  </span>
                 </div>
               </div>
             ))}
 
-            <div className="p-4 bg-white flex justify-between items-center text-sm font-extrabold text-[#111111]">
-              <span>TOTAL DE LA VENTA:</span>
-              <span className="text-xl">${order.total.toLocaleString('es-AR')}</span>
+            <div className="p-4 bg-white space-y-1">
+              {order.discount > 0 && (
+                <div className="flex justify-between text-xs text-[#707072]">
+                  <span>Subtotal</span><span>${order.subtotal.toLocaleString('es-AR')}</span>
+                </div>
+              )}
+              {order.discount > 0 && (
+                <div className="flex justify-between text-xs text-[#007d48] font-semibold">
+                  <span>Descuento</span><span>-${order.discount.toLocaleString('es-AR')}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center text-sm font-extrabold text-[#111111]">
+                <span>TOTAL DE LA VENTA:</span>
+                <span className="text-xl">${order.total.toLocaleString('es-AR')}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -168,30 +227,71 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
           </div>
         </div>
 
-        {/* Status Actions */}
-        <div className="pt-4 border-t border-[#e5e5e5] flex flex-wrap gap-2 justify-end">
-          {order.status !== 'completada' && (
-            <button
-              onClick={() => handleUpdateStatus('completada')}
-              disabled={updating}
-              className="py-3 px-5 bg-[#007d48] hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-full flex items-center gap-2 transition-all disabled:opacity-50"
+        {/* Authorize Payment Method Selector (only for pending) */}
+        {isPending && (
+          <div className="p-4 bg-[#007d48]/5 border border-[#007d48]/20 space-y-2">
+            <label className="block text-xs font-extrabold uppercase tracking-wider text-[#111111]">
+              Medio de pago a registrar al autorizar
+            </label>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              className="w-full bg-white text-[#111111] text-xs font-bold py-2 px-3 border border-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#007d48] cursor-pointer"
             >
-              {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              <span>Marcar como Completada</span>
-            </button>
-          )}
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="tarjeta">Tarjeta</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+        )}
 
-          {order.status !== 'cancelada' && (
+        {/* Status Actions */}
+        {!isFinalized && (
+          <div className="pt-4 border-t border-[#e5e5e5] flex flex-wrap gap-2 justify-end">
+            {isPending && (
+              <button
+                onClick={() => onEdit(order)}
+                disabled={updating}
+                className="py-3 px-5 bg-[#f5f5f5] hover:bg-[#e5e5e5] text-[#111111] font-bold text-xs uppercase tracking-wider rounded-full flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
+              >
+                <Edit3 className="w-4 h-4" />
+                <span>Editar Pedido</span>
+              </button>
+            )}
+
+            {isPending && (
+              <button
+                onClick={handleAuthorize}
+                disabled={updating}
+                className="py-3 px-5 bg-[#007d48] hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-full flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                <span>Autorizar Venta</span>
+              </button>
+            )}
+
             <button
-              onClick={() => handleUpdateStatus('cancelada')}
+              onClick={handleCancel}
               disabled={updating}
-              className="py-3 px-5 bg-[#d30005] hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider rounded-full flex items-center gap-2 transition-all disabled:opacity-50"
+              className="py-3 px-5 bg-[#d30005] hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider rounded-full flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
             >
               {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
               <span>Cancelar Solicitud</span>
             </button>
-          )}
-        </div>
+          </div>
+        )}
+
+        {isFinalized && (
+          <div className="pt-4 border-t border-[#e5e5e5] flex justify-end">
+            <button
+              onClick={onClose}
+              className="py-3 px-6 bg-[#f5f5f5] text-[#111111] font-bold text-xs uppercase tracking-wider rounded-full flex items-center gap-2 cursor-pointer hover:bg-[#e5e5e5]"
+            >
+              <Check className="w-4 h-4" /> Cerrar
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

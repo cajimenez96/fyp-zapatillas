@@ -12,6 +12,8 @@ interface StockProductItem {
   typeName: string;
   gender: string;
   price: number;
+  retailPrice: number;
+  wholesalePrice: number;
   active: boolean;
   image: string;
   totalStock: number;
@@ -24,6 +26,8 @@ export default function AdminStockPage() {
   const [totalPairs, setTotalPairs] = useState(0);
   const [totalProducts, setTotalProducts] = useState(0);
   const [outOfStockCount, setOutOfStockCount] = useState(0);
+  const [lowStockCount, setLowStockCount] = useState(0);
+  const [minStockAlert, setMinStockAlert] = useState(3);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [lowStockOnly, setLowStockOnly] = useState(false);
@@ -47,6 +51,10 @@ export default function AdminStockPage() {
         setTotalPairs(json.data.totalPairsInStock);
         setTotalProducts(json.data.totalProductsCount);
         setOutOfStockCount(json.data.outOfStockProductsCount);
+        setLowStockCount(json.data.lowStockProductsCount || 0);
+        if (json.data.minStockAlert !== undefined) {
+          setMinStockAlert(json.data.minStockAlert);
+        }
       }
     } catch (err) {
       console.error('Error al cargar reporte de stock:', err);
@@ -95,6 +103,7 @@ export default function AdminStockPage() {
               ...prod,
               sizesStock: updatedSizes,
               totalStock: newTotal,
+              hasLowStock: newTotal <= minStockAlert,
             };
           }
           return prod;
@@ -120,7 +129,7 @@ export default function AdminStockPage() {
               <Boxes className="w-7 h-7" /> Control de Stock e Inventario
             </h1>
             <p className="text-xs text-[#707072] mt-1">
-              Monitoreá el stock total, alertas de reposición por talle y modificá cantidades en tiempo real.
+              Monitoreá el stock total por modelo, alertas de reposición (total ≤ {minStockAlert} pares) y modificá cantidades en tiempo real.
             </p>
           </div>
 
@@ -161,11 +170,13 @@ export default function AdminStockPage() {
 
           <div className="bg-white p-5 border border-[#e5e5e5] space-y-1 shadow-sm">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#707072] block">
-              MODELOS AGOTADOS (STOCK 0)
+              MODELOS CON STOCK BAJO / CRÍTICO
             </span>
-            <span className="text-2xl font-extrabold text-[#d30005]">{outOfStockCount} modelos</span>
+            <span className="text-2xl font-extrabold text-[#f59e0b]">
+              {lowStockCount + outOfStockCount} modelos
+            </span>
             <span className="text-xs text-[#707072] block font-semibold">
-              Requieren carga de inventario urgente
+              Total de pares ≤ {minStockAlert} ({outOfStockCount} agotados)
             </span>
           </div>
 
@@ -202,7 +213,7 @@ export default function AdminStockPage() {
                 className="w-4 h-4 accent-[#111111] cursor-pointer"
               />
               <span className="flex items-center gap-1">
-                <AlertTriangle className="w-3.5 h-3.5 text-[#f59e0b]" /> Ver sólo modelos con talle crítico / stock bajo (&lt; 3 pares)
+                <AlertTriangle className="w-3.5 h-3.5 text-[#f59e0b]" /> Ver sólo modelos con stock crítico (Total ≤ {minStockAlert} pares)
               </span>
             </label>
           </div>
@@ -211,7 +222,6 @@ export default function AdminStockPage() {
         {/* Stock Breakdown List */}
         <div className="bg-white border border-[#e5e5e5] shadow-sm">
           {loading ? (
-            /* Tailwind Skeleton Loading State */
             <div className="p-6 space-y-4 animate-pulse">
               <div className="h-6 bg-[#e5e5e5] w-1/4 rounded"></div>
               <div className="space-y-3">
@@ -257,12 +267,16 @@ export default function AdminStockPage() {
                         className={`font-extrabold text-xs px-3 py-1 rounded-full border ${
                           prod.totalStock === 0
                             ? 'bg-[#d30005]/10 text-[#d30005] border-[#d30005]'
-                            : prod.hasLowStock
+                            : prod.totalStock <= minStockAlert
                             ? 'bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]'
                             : 'bg-[#f5f5f5] text-[#111111] border-[#e5e5e5]'
                         }`}
                       >
-                        Total: {prod.totalStock} pares
+                        {prod.totalStock === 0
+                          ? 'AGOTADO (0 pares)'
+                          : prod.totalStock <= minStockAlert
+                          ? `STOCK BAJO (Total: ${prod.totalStock} pares)`
+                          : `Total: ${prod.totalStock} pares`}
                       </span>
                     </div>
                   </div>
@@ -271,7 +285,6 @@ export default function AdminStockPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-8 gap-2 bg-[#f5f5f5] p-3 border border-[#e5e5e5]">
                     {prod.sizesStock.map((sizeItem) => {
                       const isSavingThis = updatingId === `${prod._id}-${sizeItem.size}`;
-                      const isLow = sizeItem.stock > 0 && sizeItem.stock < 3;
                       const isZero = sizeItem.stock === 0;
 
                       return (
@@ -280,8 +293,6 @@ export default function AdminStockPage() {
                           className={`p-2 bg-white border space-y-1 text-center transition-all ${
                             isZero
                               ? 'border-[#d30005]/40 bg-[#d30005]/5'
-                              : isLow
-                              ? 'border-[#f59e0b]/40 bg-[#f59e0b]/5'
                               : 'border-[#e5e5e5]'
                           }`}
                         >

@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { CheckCircle2, Copy, Check, MessageSquare, Clock } from 'lucide-react';
 import { buildWhatsAppShareUrl } from '@/utils/whatsapp';
+import { useSettings } from '@/context/SettingsContext';
 
 interface Step3PaymentWhatsAppProps {
   orderNumber: string;
@@ -30,44 +31,31 @@ export const Step3PaymentWhatsApp: React.FC<Step3PaymentWhatsAppProps> = ({
   onFinish,
 }) => {
   const [copiedAlias, setCopiedAlias] = useState(false);
+  const [copiedCbu, setCopiedCbu] = useState(false);
   const [copiedTotal, setCopiedTotal] = useState(false);
 
-  const [bankAlias, setBankAlias] = useState(process.env.NEXT_PUBLIC_BANK_ALIAS || 'FP.ZAPATILLAS');
-  const [bankHolder, setBankHolder] = useState(process.env.NEXT_PUBLIC_BANK_HOLDER || 'FP Calzados');
-  const [bankName, setBankName] = useState(process.env.NEXT_PUBLIC_BANK_NAME || 'Banco Galicia');
-  const [storePhone, setStorePhone] = useState(process.env.NEXT_PUBLIC_WHATSAPP_PHONE || '5493815218630');
-
-  useEffect(() => {
-    async function loadSettings() {
-      try {
-        const res = await fetch('/api/settings');
-        const json = await res.json();
-        if (json.ok && json.data) {
-          if (json.data.bankAlias) setBankAlias(json.data.bankAlias);
-          if (json.data.bankHolder) setBankHolder(json.data.bankHolder);
-          if (json.data.bankName) setBankName(json.data.bankName);
-          if (json.data.storePhone) setStorePhone(json.data.storePhone);
-        }
-      } catch (err) {
-        console.error('Error al cargar datos bancarios actualizados:', err);
-      }
-    }
-    loadSettings();
-  }, []);
+  const { settings } = useSettings();
 
   const whatsappUrl = buildWhatsAppShareUrl({
     orderNumber,
     guest: customer,
     items,
     total,
-    storePhone,
-    bankAlias,
+    storePhone: settings.storePhone,
+    bankAlias: settings.bankAlias,
   });
 
   const handleCopyAlias = () => {
-    navigator.clipboard.writeText(bankAlias);
+    navigator.clipboard.writeText(settings.bankAlias);
     setCopiedAlias(true);
     setTimeout(() => setCopiedAlias(false), 2000);
+  };
+
+  const handleCopyCbu = () => {
+    if (!settings.bankCbu) return;
+    navigator.clipboard.writeText(settings.bankCbu);
+    setCopiedCbu(true);
+    setTimeout(() => setCopiedCbu(false), 2000);
   };
 
   const handleCopyTotal = () => {
@@ -108,7 +96,7 @@ export const Step3PaymentWhatsApp: React.FC<Step3PaymentWhatsAppProps> = ({
             <span className="text-[10px] font-bold text-[#707072] uppercase tracking-wider block">
               ALIAS BANCARIO
             </span>
-            <span className="text-base font-extrabold text-[#111111]">{bankAlias}</span>
+            <span className="text-base font-extrabold text-[#111111]">{settings.bankAlias}</span>
           </div>
           <button
             onClick={handleCopyAlias}
@@ -119,19 +107,46 @@ export const Step3PaymentWhatsApp: React.FC<Step3PaymentWhatsAppProps> = ({
           </button>
         </div>
 
+        {/* Optional CBU / CVU */}
+        {settings.bankCbu && (
+          <div className="border-b border-[#e5e5e5] pb-3 flex justify-between items-start">
+            <div>
+              <span className="text-[10px] font-bold text-[#707072] uppercase tracking-wider block">
+                CBU / CVU
+              </span>
+              <span className="text-sm font-bold text-[#111111] break-all">{settings.bankCbu}</span>
+            </div>
+            <button
+              onClick={handleCopyCbu}
+              className="px-3 py-1.5 bg-white text-[#111111] text-xs font-bold border border-[#e5e5e5] hover:border-[#111111] transition-all flex items-center gap-1.5 active:scale-95 shadow-xs cursor-pointer"
+            >
+              {copiedCbu ? <Check className="w-3.5 h-3.5 text-[#007d48]" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copiedCbu ? '¡Copiado!' : 'Copiar CBU'}</span>
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4 text-xs">
           <div>
             <span className="text-[10px] font-bold text-[#707072] uppercase tracking-wider block">
               TITULAR DE CUENTA
             </span>
-            <span className="font-bold text-[#111111]">{bankHolder}</span>
+            <span className="font-bold text-[#111111]">{settings.bankHolder}</span>
           </div>
           <div>
             <span className="text-[10px] font-bold text-[#707072] uppercase tracking-wider block">
-              BANCO
+              BANCO / ENTIDAD
             </span>
-            <span className="font-bold text-[#111111]">{bankName}</span>
+            <span className="font-bold text-[#111111]">{settings.bankName}</span>
           </div>
+          {settings.bankCuit && (
+            <div>
+              <span className="text-[10px] font-bold text-[#707072] uppercase tracking-wider block">
+                CUIT / CUIL
+              </span>
+              <span className="font-bold text-[#111111]">{settings.bankCuit}</span>
+            </div>
+          )}
         </div>
 
         <div className="border-t border-[#e5e5e5] pt-3 flex justify-between items-center bg-white p-3">
@@ -156,7 +171,7 @@ export const Step3PaymentWhatsApp: React.FC<Step3PaymentWhatsAppProps> = ({
       {/* Business Hours Callout */}
       <div className="flex items-center gap-2 text-xs text-[#707072] bg-[#f5f5f5] p-3 border border-[#e5e5e5]">
         <Clock className="w-4 h-4 text-[#111111]" />
-        <span>Horario de atención WhatsApp: <strong>12:00 a 22:00 hs</strong>.</span>
+        <span>Horario de atención WhatsApp: <strong>{settings.businessHours}</strong>.</span>
       </div>
 
       {/* GREEN BUTTON: Enviar resumen a WhatsApp */}

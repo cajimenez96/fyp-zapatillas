@@ -34,6 +34,9 @@ const STATUS_ICON: Record<string, React.ReactNode> = {
   cancelada: <Ban className="w-3 h-3" />,
 };
 
+import { formatPrice } from '@/utils/formatCurrency';
+import { toast } from '@/components/ui/sonner';
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<AdminOrderItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,19 +46,6 @@ export default function AdminOrdersPage() {
 
   const [selectedOrder, setSelectedOrder] = useState<AdminOrderItem | null>(null);
   const [editingOrder, setEditingOrder] = useState<AdminOrderItem | null>(null);
-
-  const [successMsg, setSuccessMsg] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-
-  const showSuccess = (msg: string) => {
-    setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(''), 4000);
-  };
-
-  const showError = (msg: string) => {
-    setErrorMsg(msg);
-    setTimeout(() => setErrorMsg(''), 6000);
-  };
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -72,6 +62,7 @@ export default function AdminOrdersPage() {
       }
     } catch (err) {
       console.error('Error al cargar solicitudes de pedidos:', err);
+      toast.error('Error al cargar la lista de pedidos');
     } finally {
       setLoading(false);
     }
@@ -82,8 +73,6 @@ export default function AdminOrdersPage() {
   }, [fetchOrders]);
 
   const handleAuthorize = async (id: string, paymentMethod: string) => {
-    setErrorMsg('');
-    setSuccessMsg('');
     try {
       const res = await fetch(`/api/admin/orders/${id}/authorize`, {
         method: 'POST',
@@ -94,17 +83,17 @@ export default function AdminOrdersPage() {
       const json = await res.json();
       if (!json.ok) throw new Error(json.message || 'Error al autorizar la orden');
 
-      showSuccess(`Venta #${json.orderNumber} autorizada y stock descontado.`);
+      toast.success(`Venta #${json.orderNumber} autorizada con éxito`, {
+        description: 'El stock fue descontado automáticamente.',
+      });
       setSelectedOrder(null);
       fetchOrders();
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Error al autorizar');
+      toast.error(err instanceof Error ? err.message : 'Error al autorizar la orden');
     }
   };
 
   const handleCancel = async (id: string) => {
-    setErrorMsg('');
-    setSuccessMsg('');
     try {
       const res = await fetch(`/api/admin/orders/${id}`, {
         method: 'PATCH',
@@ -115,11 +104,13 @@ export default function AdminOrdersPage() {
       const json = await res.json();
       if (!json.ok) throw new Error(json.message || 'Error al cancelar la orden');
 
-      showSuccess(`Solicitud #${json.data.orderNumber} cancelada.`);
+      toast.warning(`Solicitud #${json.data.orderNumber} cancelada`, {
+        description: 'La orden quedó marcada como cancelada.',
+      });
       setSelectedOrder(null);
       fetchOrders();
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Error al cancelar');
+      toast.error(err instanceof Error ? err.message : 'Error al cancelar la orden');
     }
   };
 
@@ -135,7 +126,7 @@ export default function AdminOrdersPage() {
               <ShoppingBag className="w-7 h-7" /> Solicitudes de Pedido
             </h1>
             <p className="text-xs text-[#707072] mt-1">
-              Gestioná los pedidos, autorizá ventas y descuento stock en tiempo real.
+              Gestioná los pedidos, autorizá ventas y descontá stock en tiempo real.
             </p>
           </div>
 
@@ -146,21 +137,6 @@ export default function AdminOrdersPage() {
             <Plus className="w-4 h-4" /> Nueva Venta Directa
           </Link>
         </div>
-
-        {/* Alerts */}
-        {successMsg && (
-          <div className="p-4 bg-[#007d48]/10 border border-[#007d48] text-[#007d48] text-xs font-semibold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-        )}
-
-        {errorMsg && (
-          <div className="p-4 bg-[#d30005]/10 border border-[#d30005] text-[#d30005] text-xs font-semibold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
 
         {/* Search & Filter Controls */}
         <div className="bg-white border border-[#e5e5e5] p-4 flex flex-col sm:flex-row gap-4 items-center justify-between shadow-sm">
@@ -257,7 +233,7 @@ export default function AdminOrdersPage() {
                       </td>
 
                       <td className="py-3 px-4 text-right font-extrabold text-sm text-[#111111]">
-                        ${ord.total.toLocaleString('es-AR')}
+                        {formatPrice(ord.total)}
                       </td>
 
                       <td className="py-3 px-4 text-center">
@@ -301,7 +277,7 @@ export default function AdminOrdersPage() {
         order={editingOrder}
         onClose={() => setEditingOrder(null)}
         onSaved={() => {
-          showSuccess('Pedido actualizado correctamente.');
+          toast.success('Pedido actualizado correctamente.');
           fetchOrders();
         }}
       />

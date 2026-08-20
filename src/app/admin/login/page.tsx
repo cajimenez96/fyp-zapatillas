@@ -2,7 +2,8 @@
 
 import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Lock, User, AlertCircle, Loader2, ShieldCheck } from 'lucide-react';
+import { Lock, User, Loader2, ShieldCheck } from 'lucide-react';
+import { toast } from '@/components/ui/sonner';
 
 function LoginFormContent() {
   const router = useRouter();
@@ -12,17 +13,15 @@ function LoginFormContent() {
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username || !password) {
-      setErrorMsg('Por favor ingresá usuario y contraseña');
+      toast.error('Por favor ingresá usuario y contraseña');
       return;
     }
 
     setLoading(true);
-    setErrorMsg('');
 
     try {
       const res = await fetch('/api/admin/auth/login', {
@@ -37,9 +36,12 @@ function LoginFormContent() {
         throw new Error(json.message || 'Credenciales de acceso incorrectas');
       }
 
+      toast.success('¡Sesión iniciada correctamente!', {
+        description: 'Redirigiendo al panel...',
+      });
       window.location.href = redirectPath;
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error al iniciar sesión');
+      toast.error(err instanceof Error ? err.message : 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
@@ -60,14 +62,6 @@ function LoginFormContent() {
             Ingresá tus credenciales para gestionar el inventario y las ventas.
           </p>
         </div>
-
-        {/* Error Alert */}
-        {errorMsg && (
-          <div className="p-3 bg-[#d30005]/10 border border-[#d30005] text-[#d30005] text-xs font-semibold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">

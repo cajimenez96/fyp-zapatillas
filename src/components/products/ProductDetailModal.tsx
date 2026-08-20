@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { X, ShoppingBag, Check, AlertCircle, ShieldCheck, Tag } from 'lucide-react';
 import { FormattedProduct } from './ProductCard';
 import { useCart } from '@/context/CartContext';
+import { formatPrice } from '@/utils/formatCurrency';
 
 export interface CartItemAddPayload {
   product: FormattedProduct;
@@ -170,11 +171,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 {/* Active price */}
                 <div className="flex items-baseline gap-3">
                   <span className="text-2xl font-extrabold text-[#111111]">
-                    ${effectivePrice.toLocaleString('es-AR')}
+                    {formatPrice(effectivePrice)}
                   </span>
                   {isWholesale && hasWholesaleDiscount && (
                     <span className="text-sm line-through text-[#707072]">
-                      ${retailPrice.toLocaleString('es-AR')}
+                      {formatPrice(retailPrice)}
                     </span>
                   )}
                 </div>
@@ -188,10 +189,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   }`}>
                     <Tag className="w-3.5 h-3.5 flex-shrink-0" />
                     {isWholesale ? (
-                      <span>¡Precio mayorista activo! (${wholesalePrice.toLocaleString('es-AR')} c/u)</span>
+                      <span>¡Precio mayorista activo! ({formatPrice(wholesalePrice)} c/u)</span>
                     ) : (
                       <span>
-                        Precio mayorista: ${wholesalePrice.toLocaleString('es-AR')} — te faltan{' '}
+                        Precio mayorista: {formatPrice(wholesalePrice)} — te faltan{' '}
                         <strong>{pairsToWholesale} par{pairsToWholesale !== 1 ? 'es' : ''}</strong> más en el carrito.
                       </span>
                     )}

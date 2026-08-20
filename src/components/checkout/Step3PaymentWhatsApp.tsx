@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { CheckCircle2, Copy, Check, MessageSquare, Clock } from 'lucide-react';
 import { buildWhatsAppShareUrl } from '@/utils/whatsapp';
 import { useSettings } from '@/context/SettingsContext';
+import { formatPrice, formatAmount } from '@/utils/formatCurrency';
 
 interface Step3PaymentWhatsAppProps {
   orderNumber: string;
@@ -155,7 +156,7 @@ export const Step3PaymentWhatsApp: React.FC<Step3PaymentWhatsAppProps> = ({
               MONTO EXACTO A TRANSFERIR
             </span>
             <span className="text-xl font-extrabold text-[#111111]">
-              ${total.toLocaleString('es-AR')}
+              {formatPrice(total)}
             </span>
           </div>
           <button

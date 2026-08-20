@@ -15,6 +15,9 @@ import {
   Receipt,
   Tag,
 } from 'lucide-react';
+import { formatPrice } from '@/utils/formatCurrency';
+import { toast } from '@/components/ui/sonner';
+import Image from 'next/image';
 import Link from 'next/link';
 
 const WHOLESALE_THRESHOLD = 5;
@@ -38,6 +41,9 @@ interface ProductSearchResult {
   wholesalePrice: number;
   price?: number;
   sizesStock: { size: number; stock: number }[];
+  images?: { url: string; isPrincipal?: boolean }[];
+  brandId?: { name: string } | string;
+  gender?: string;
 }
 
 export default function AdminPOSPage() {
@@ -61,8 +67,6 @@ export default function AdminPOSPage() {
 
   // Sale state
   const [saving, setSaving] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
 
   const totalPairs = items.reduce((sum, i) => sum + i.qty, 0);
   const isWholesale = totalPairs >= WHOLESALE_THRESHOLD;
@@ -163,15 +167,13 @@ export default function AdminPOSPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg('');
-    setSuccessMsg('');
 
     if (!guestName.trim() || !guestLastName.trim() || !guestPhone.trim()) {
-      setErrorMsg('Los datos del cliente son obligatorios.');
+      toast.error('Los datos del cliente son obligatorios.');
       return;
     }
     if (computedItems.length === 0) {
-      setErrorMsg('Agregá al menos un producto a la venta.');
+      toast.error('Agregá al menos un producto a la venta.');
       return;
     }
 
@@ -198,7 +200,9 @@ export default function AdminPOSPage() {
       const json = await res.json();
       if (!json.ok) throw new Error(json.message ?? 'Error al registrar la venta');
 
-      setSuccessMsg(`Venta ${json.orderNumber} registrada. Stock actualizado automáticamente.`);
+      toast.success(`Venta ${json.orderNumber} registrada con éxito`, {
+        description: 'El stock fue descontado y la orden está autorizada.',
+      });
 
       // Reset form
       setGuestName('');
@@ -209,7 +213,9 @@ export default function AdminPOSPage() {
       setDiscountNote('');
       setPaymentMethod('efectivo');
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error al registrar la venta');
+      toast.error(err instanceof Error ? err.message : 'Error al registrar la venta', {
+        description: 'Revisá los datos e intentá nuevamente.',
+      });
     } finally {
       setSaving(false);
     }
@@ -239,20 +245,6 @@ export default function AdminPOSPage() {
             </p>
           </div>
         </div>
-
-        {/* Alerts */}
-        {successMsg && (
-          <div className="p-4 bg-[#007d48]/10 border border-[#007d48] text-[#007d48] text-sm font-semibold flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-        )}
-        {errorMsg && (
-          <div className="p-4 bg-[#d30005]/10 border border-[#d30005] text-[#d30005] text-sm font-semibold flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: Customer + Products */}
@@ -311,36 +303,72 @@ export default function AdminPOSPage() {
               </div>
 
               {searchResults.length > 0 && (
-                <div className="border border-[#e5e5e5] divide-y divide-[#e5e5e5] max-h-60 overflow-y-auto">
-                  {searchResults.map((prod) => (
-                    <div key={prod._id} className="p-4 space-y-2">
-                      <div className="flex justify-between items-start">
-                        <p className="font-bold text-sm text-[#111111]">{prod.name}</p>
-                        <div className="text-right text-xs">
-                          <p className="font-bold text-[#111111]">
-                            Minorista: ${(prod.retailPrice ?? prod.price ?? 0).toLocaleString('es-AR')}
-                          </p>
-                          <p className="text-[#007d48] font-semibold">
-                            Mayorista: ${(prod.wholesalePrice ?? prod.price ?? 0).toLocaleString('es-AR')}
-                          </p>
+                <div className="border border-[#e5e5e5] divide-y divide-[#e5e5e5] max-h-80 overflow-y-auto">
+                  {searchResults.map((prod) => {
+                    const mainImage = prod.images?.find((img) => img.isPrincipal)?.url || prod.images?.[0]?.url;
+                    const brandName = typeof prod.brandId === 'object' ? prod.brandId?.name : '';
+
+                    return (
+                      <div key={prod._id} className="p-4 space-y-3 hover:bg-[#fafafa] transition-colors">
+                        <div className="flex items-center gap-3">
+                          {/* Product Cover Thumbnail */}
+                          <div className="relative w-14 h-14 bg-[#f5f5f5] flex-shrink-0 border border-[#e5e5e5] overflow-hidden">
+                            {mainImage ? (
+                              <Image
+                                src={mainImage}
+                                alt={prod.name}
+                                fill
+                                sizes="56px"
+                                className="object-cover object-center"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[#707072] text-[10px] uppercase font-bold">
+                                Sin foto
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-start gap-2">
+                              <div>
+                                <p className="font-bold text-sm text-[#111111] truncate">{prod.name}</p>
+                                {(brandName || prod.gender) && (
+                                  <p className="text-[11px] text-[#707072] font-semibold">
+                                    {[brandName, prod.gender].filter(Boolean).join(' • ')}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-right text-xs flex-shrink-0">
+                                <p className="font-extrabold text-[#111111]">
+                                  Min: {formatPrice(prod.retailPrice ?? prod.price)}
+                                </p>
+                                <p className="text-[#007d48] font-bold">
+                                  May: {formatPrice(prod.wholesalePrice ?? prod.price)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-1.5 pl-0 sm:pl-[68px]">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#707072] mr-1">Talles:</span>
+                          {prod.sizesStock
+                            .filter((s) => s.stock > 0)
+                            .map((s) => (
+                              <button
+                                key={s.size}
+                                type="button"
+                                onClick={() => addItem(prod, s.size)}
+                                className="px-2.5 py-1 bg-[#f5f5f5] text-[#111111] text-xs font-bold border border-[#e5e5e5] hover:bg-[#111111] hover:text-white transition-all cursor-pointer flex items-center gap-1"
+                              >
+                                <span>{s.size}</span>
+                                <span className="text-[10px] opacity-70">({s.stock})</span>
+                              </button>
+                            ))}
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {prod.sizesStock
-                          .filter((s) => s.stock > 0)
-                          .map((s) => (
-                            <button
-                              key={s.size}
-                              type="button"
-                              onClick={() => addItem(prod, s.size)}
-                              className="px-3 py-1.5 bg-[#f5f5f5] text-[#111111] text-xs font-bold border border-[#e5e5e5] hover:bg-[#111111] hover:text-white transition-all cursor-pointer"
-                            >
-                              + Talle {s.size} ({s.stock})
-                            </button>
-                          ))}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -423,7 +451,7 @@ export default function AdminPOSPage() {
                       </div>
 
                       <span className="w-24 text-right font-extrabold text-[#111111]">
-                        ${(item.unitPrice * item.qty).toLocaleString('es-AR')}
+                        {formatPrice(item.unitPrice * item.qty)}
                       </span>
 
                       <button
@@ -496,7 +524,7 @@ export default function AdminPOSPage() {
               <div className="border-t border-[#e5e5e5] pt-4 space-y-2 text-xs">
                 <div className="flex justify-between text-[#707072]">
                   <span>Subtotal</span>
-                  <span>${subtotal.toLocaleString('es-AR')}</span>
+                  <span>{formatPrice(subtotal)}</span>
                 </div>
                 {isWholesale && (
                   <div className="flex justify-between text-[#007d48] font-semibold">
@@ -507,12 +535,12 @@ export default function AdminPOSPage() {
                 {discount > 0 && (
                   <div className="flex justify-between text-[#007d48] font-semibold">
                     <span>Descuento</span>
-                    <span>-${discount.toLocaleString('es-AR')}</span>
+                    <span>-{formatPrice(discount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-extrabold text-xl text-[#111111] pt-2 border-t border-[#e5e5e5]">
                   <span>TOTAL</span>
-                  <span>${total.toLocaleString('es-AR')}</span>
+                  <span>{formatPrice(total)}</span>
                 </div>
               </div>
 

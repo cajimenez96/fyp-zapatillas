@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { AdminNav } from '@/components/admin/AdminNav';
-import { Boxes, Search, AlertTriangle, CheckCircle2, AlertCircle, Plus, Minus, RefreshCw } from 'lucide-react';
+import { Boxes, Search, AlertTriangle, Plus, Minus, RefreshCw } from 'lucide-react';
+import { toast } from '@/components/ui/sonner';
 
 interface StockProductItem {
   _id: string;
@@ -34,9 +35,6 @@ export default function AdminStockPage() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const [successMsg, setSuccessMsg] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-
   const fetchStock = useCallback(async () => {
     setLoading(true);
     try {
@@ -58,6 +56,7 @@ export default function AdminStockPage() {
       }
     } catch (err) {
       console.error('Error al cargar reporte de stock:', err);
+      toast.error('Error al cargar reporte de inventario');
     } finally {
       setLoading(false);
     }
@@ -75,8 +74,6 @@ export default function AdminStockPage() {
   ) => {
     const newStock = Math.max(0, currentStock + delta);
     setUpdatingId(`${productId}-${size}`);
-    setErrorMsg('');
-    setSuccessMsg('');
 
     try {
       const res = await fetch('/api/admin/stock', {
@@ -109,9 +106,9 @@ export default function AdminStockPage() {
           return prod;
         })
       );
-      setSuccessMsg(`Talle ${size} actualizado a ${newStock} unidades`);
+      toast.success(`Talle ${size} actualizado a ${newStock} pares`);
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error al actualizar stock');
+      toast.error(err instanceof Error ? err.message : 'Error al actualizar stock');
     } finally {
       setUpdatingId(null);
     }
@@ -134,27 +131,15 @@ export default function AdminStockPage() {
           </div>
 
           <button
-            onClick={() => fetchStock()}
+            onClick={() => {
+              fetchStock();
+              toast.info('Inventario actualizado');
+            }}
             className="py-2.5 px-4 bg-white border border-[#e5e5e5] hover:border-[#111111] text-[#111111] font-bold text-xs uppercase tracking-wider rounded-full flex items-center gap-2 transition-all shadow-xs cursor-pointer"
           >
             <RefreshCw className="w-4 h-4" /> Actualizar Datos
           </button>
         </div>
-
-        {/* Alerts */}
-        {successMsg && (
-          <div className="p-4 bg-[#007d48]/10 border border-[#007d48] text-[#007d48] text-xs font-semibold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-        )}
-
-        {errorMsg && (
-          <div className="p-4 bg-[#d30005]/10 border border-[#d30005] text-[#d30005] text-xs font-semibold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
 
         {/* KPI Metrics Summary Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

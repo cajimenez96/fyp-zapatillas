@@ -5,6 +5,7 @@ import Image from "next/image";
 import { CustomerFormData } from "./Step1CustomerData";
 import { CartItem } from "@/context/CartContext";
 import { Check, Edit, AlertCircle, Loader2 } from "lucide-react";
+import { formatPrice } from "@/utils/formatCurrency";
 
 interface Step2OrderReviewProps {
   customerData: CustomerFormData;
@@ -86,7 +87,7 @@ export const Step2OrderReview: React.FC<Step2OrderReviewProps> = ({
                 Cantidad: <strong className="text-[#111111]">{item.qty}</strong>
               </p>
               <p className="text-xs font-extrabold text-[#111111] mt-0.5">
-                ${((item.retailPrice) * item.qty).toLocaleString("es-AR")}
+                {formatPrice(item.retailPrice * item.qty)}
               </p>
             </div>
           </div>
@@ -95,7 +96,7 @@ export const Step2OrderReview: React.FC<Step2OrderReviewProps> = ({
         {/* Subtotal & Total Row */}
         <div className="p-4 bg-white flex justify-between items-center text-sm font-extrabold text-[#111111]">
           <span>Total a pagar:</span>
-          <span className="text-xl">${subtotal.toLocaleString("es-AR")}</span>
+          <span className="text-xl">{formatPrice(subtotal)}</span>
         </div>
       </div>
 

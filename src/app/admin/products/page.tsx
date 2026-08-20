@@ -12,14 +12,17 @@ import {
   Upload,
   Eye,
   EyeOff,
-  AlertCircle,
-  CheckCircle2,
 } from 'lucide-react';
+
+import { formatPrice } from '@/utils/formatCurrency';
+import { toast } from '@/components/ui/sonner';
 
 interface AdminProductItem {
   _id: string;
   name: string;
-  price: number;
+  price?: number;
+  retailPrice?: number;
+  wholesalePrice?: number;
   gender: string;
   active: boolean;
   brandId: { _id: string; name: string } | string;
@@ -37,10 +40,6 @@ export default function AdminProductsPage() {
   const [selectedGender, setSelectedGender] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
 
-  // Alerts
-  const [successMsg, setSuccessMsg] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
@@ -56,7 +55,8 @@ export default function AdminProductsPage() {
         setProducts(json.data);
       }
     } catch (err) {
-      console.error('Error al cargar productos en admin:', err);
+      console.error('Error cargando productos:', err);
+      toast.error('Error al cargar productos del catálogo');
     } finally {
       setLoading(false);
     }
@@ -66,27 +66,31 @@ export default function AdminProductsPage() {
     fetchProducts();
   }, [fetchProducts]);
 
-  const handleToggleActive = async (product: AdminProductItem) => {
+  const toggleStatus = async (product: AdminProductItem) => {
     try {
-      const res = await fetch('/api/admin/products', {
+      const res = await fetch(`/api/admin/products`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: product._id, active: !product.active }),
+        body: JSON.stringify({
+          _id: product._id,
+          active: !product.active,
+        }),
       });
 
       const json = await res.json();
       if (json.ok) {
-        setSuccessMsg(
-          !product.active
-            ? `Producto "${product.name}" activado correctamente`
-            : `Producto "${product.name}" desactivado`
-        );
+        const msg = !product.active
+          ? `Producto "${product.name}" activado`
+          : `Producto "${product.name}" desactivado`;
+        toast.success(msg, {
+          description: !product.active ? 'Visible en catálogo.' : 'Oculto del catálogo.',
+        });
         fetchProducts();
       } else {
         throw new Error(json.message);
       }
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error al cambiar estado');
+      toast.error(err instanceof Error ? err.message : 'Error al cambiar estado');
     }
   };
 
@@ -122,21 +126,6 @@ export default function AdminProductsPage() {
             </Link>
           </div>
         </div>
-
-        {/* Alerts */}
-        {successMsg && (
-          <div className="p-4 bg-[#007d48]/10 border border-[#007d48] text-[#007d48] text-xs font-semibold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-        )}
-
-        {errorMsg && (
-          <div className="p-4 bg-[#d30005]/10 border border-[#d30005] text-[#d30005] text-xs font-semibold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
 
         {/* Filters & Search Controls Bar */}
         <div className="bg-white border border-[#e5e5e5] p-4 flex flex-col sm:flex-row gap-4 items-center justify-between shadow-sm">
@@ -245,8 +234,15 @@ export default function AdminProductsPage() {
                           {prod.gender}
                         </td>
 
-                        <td className="py-3 px-4 text-right font-extrabold text-sm text-[#111111]">
-                          ${prod.price.toLocaleString('es-AR')}
+                        <td className="py-3 px-4 text-right">
+                          <div className="font-extrabold text-sm text-[#111111]">
+                            {formatPrice(prod.retailPrice ?? prod.price)}
+                          </div>
+                          {(prod.wholesalePrice !== undefined && prod.wholesalePrice !== null) && (
+                            <div className="text-[10px] font-bold text-[#007d48]">
+                              May: {formatPrice(prod.wholesalePrice)}
+                            </div>
+                          )}
                         </td>
 
                         <td className="py-3 px-4 text-center">
@@ -276,7 +272,7 @@ export default function AdminProductsPage() {
                         <td className="py-3 px-4 text-right">
                           <div className="flex justify-end gap-2">
                             <button
-                              onClick={() => handleToggleActive(prod)}
+                              onClick={() => toggleStatus(prod)}
                               className={`p-1.5 rounded-full transition-colors ${
                                 prod.active
                                   ? 'bg-[#007d48] text-white'

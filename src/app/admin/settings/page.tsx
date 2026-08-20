@@ -3,22 +3,25 @@
 import React, { useState, useEffect } from "react";
 import { AdminNav } from "@/components/admin/AdminNav";
 import {
-  CreditCard,
-  Save,
-  CheckCircle2,
-  AlertCircle,
-  Loader2,
+  Store,
   Phone,
-  Building,
+  Mail,
+  Clock,
+  Globe,
+  CreditCard,
+  Package,
+  Truck,
+  Save,
+  Loader2,
+  ShieldCheck,
+  Building2,
   Boxes,
   ShoppingBag,
-  Store,
-  Clock,
-  Mail,
-  Truck,
   Tag,
-  Globe,
+  Sliders,
+  DollarSign,
 } from "lucide-react";
+import { toast } from "@/components/ui/sonner";
 
 export default function AdminSettingsPage() {
   // Identity & Contact
@@ -37,17 +40,13 @@ export default function AdminSettingsPage() {
   const [bankCuit, setBankCuit] = useState("");
   const [bankName, setBankName] = useState("");
 
-  // Inventory & Alerts
+  // Inventory & Business Rules
   const [minStockAlert, setMinStockAlert] = useState<number | "">(3);
-
-  // Commercial Rules
   const [wholesaleMinPairs, setWholesaleMinPairs] = useState<number | "">(5);
   const [shippingInfo, setShippingInfo] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     async function fetchSettings() {
@@ -55,29 +54,27 @@ export default function AdminSettingsPage() {
         const res = await fetch("/api/admin/settings");
         const json = await res.json();
         if (json.ok && json.data) {
-          const d = json.data;
-          setStoreName(d.storeName || "");
-          setStorePhone(d.storePhone || "");
-          setStoreEmail(d.storeEmail || "");
-          setBusinessHours(d.businessHours || "");
-          setWhatsappInquiryMessage(d.whatsappInquiryMessage || "");
-          setInstagramUrl(d.instagramUrl || "");
-          setFacebookUrl(d.facebookUrl || "");
+          const s = json.data;
+          setStoreName(s.storeName || "");
+          setStorePhone(s.storePhone || "");
+          setStoreEmail(s.storeEmail || "");
+          setBusinessHours(s.businessHours || "");
+          setWhatsappInquiryMessage(s.whatsappInquiryMessage || "");
+          setInstagramUrl(s.instagramUrl || "");
+          setFacebookUrl(s.facebookUrl || "");
 
-          setBankAlias(d.bankAlias || "");
-          setBankCbu(d.bankCbu || "");
-          setBankHolder(d.bankHolder || "");
-          setBankCuit(d.bankCuit || "");
-          setBankName(d.bankName || "");
+          setBankAlias(s.bankAlias || "");
+          setBankCbu(s.bankCbu || "");
+          setBankHolder(s.bankHolder || "");
+          setBankCuit(s.bankCuit || "");
+          setBankName(s.bankName || "");
 
-          setMinStockAlert(d.minStockAlert !== undefined ? d.minStockAlert : 3);
-          setWholesaleMinPairs(
-            d.wholesaleMinPairs !== undefined ? d.wholesaleMinPairs : 5,
-          );
-          setShippingInfo(d.shippingInfo || "");
+          setMinStockAlert(s.minStockAlert ?? 3);
+          setWholesaleMinPairs(s.wholesaleMinPairs ?? 5);
+          setShippingInfo(s.shippingInfo || "");
         }
       } catch (err) {
-        console.error("Error al cargar ajustes:", err);
+        console.error("Error al cargar configuraciones:", err);
       } finally {
         setLoading(false);
       }
@@ -88,8 +85,6 @@ export default function AdminSettingsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setSuccessMsg("");
-    setErrorMsg("");
 
     try {
       const res = await fetch("/api/admin/settings", {
@@ -121,13 +116,13 @@ export default function AdminSettingsPage() {
         throw new Error(json.message || "Error al actualizar los ajustes");
       }
 
-      setSuccessMsg(
-        "¡Ajustes del sistema y de la tienda actualizados correctamente!",
-      );
+      toast.success("¡Ajustes del sistema y de la tienda actualizados correctamente!", {
+        description: "Los cambios ya son visibles en la tienda.",
+      });
     } catch (err) {
-      setErrorMsg(
-        err instanceof Error ? err.message : "Error al guardar los cambios",
-      );
+      toast.error(err instanceof Error ? err.message : "Error al guardar los cambios", {
+        description: "Revisá los datos e intentá nuevamente.",
+      });
     } finally {
       setSaving(false);
     }
@@ -147,21 +142,6 @@ export default function AdminSettingsPage() {
             cuentas bancarias y reglas de inventario.
           </p>
         </div>
-
-        {/* Alerts */}
-        {successMsg && (
-          <div className="p-4 bg-[#007d48]/10 border border-[#007d48] text-[#007d48] text-xs font-semibold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-        )}
-
-        {errorMsg && (
-          <div className="p-4 bg-[#d30005]/10 border border-[#d30005] text-[#d30005] text-xs font-semibold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
 
         {loading ? (
           <div className="bg-white border border-[#e5e5e5] p-6 space-y-6 animate-pulse">
@@ -361,7 +341,7 @@ export default function AdminSettingsPage() {
 
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-extrabold uppercase tracking-wider text-[#111111] mb-1.5 flex items-center gap-1.5">
-                    <Building className="w-3.5 h-3.5" /> Banco o Billetera
+                    <Building2 className="w-3.5 h-3.5" /> Banco o Billetera
                     Virtual
                   </label>
                   <input

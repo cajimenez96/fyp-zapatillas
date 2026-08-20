@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { AdminNav } from '@/components/admin/AdminNav';
-import { Plus, Edit2, Trash2, AlertCircle, CheckCircle2, Loader2, Tag } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, Tag } from 'lucide-react';
+import { toast } from '@/components/ui/sonner';
 
 interface BrandItem {
   _id: string;
@@ -19,10 +20,6 @@ export default function AdminBrandsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [brandName, setBrandName] = useState('');
 
-  // Alerts State
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
-
   const fetchBrands = useCallback(async () => {
     setLoading(true);
     try {
@@ -33,6 +30,7 @@ export default function AdminBrandsPage() {
       }
     } catch (err) {
       console.error('Error al cargar marcas:', err);
+      toast.error('Error al cargar marcas');
     } finally {
       setLoading(false);
     }
@@ -44,11 +42,12 @@ export default function AdminBrandsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!brandName.trim()) return;
+    if (!brandName.trim()) {
+      toast.error('El nombre de la marca es obligatorio');
+      return;
+    }
 
     setSaving(true);
-    setErrorMsg('');
-    setSuccessMsg('');
 
     try {
       const url = '/api/admin/brands';
@@ -67,14 +66,14 @@ export default function AdminBrandsPage() {
         throw new Error(json.message || 'Error al guardar la marca');
       }
 
-      setSuccessMsg(
+      toast.success(
         editingId ? 'Marca actualizada correctamente' : 'Marca creada exitosamente'
       );
       setBrandName('');
       setEditingId(null);
       fetchBrands();
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error procesando solicitud');
+      toast.error(err instanceof Error ? err.message : 'Error procesando solicitud');
     } finally {
       setSaving(false);
     }
@@ -83,28 +82,22 @@ export default function AdminBrandsPage() {
   const handleEdit = (brand: BrandItem) => {
     setEditingId(brand._id);
     setBrandName(brand.name);
-    setErrorMsg('');
-    setSuccessMsg('');
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
     setBrandName('');
-    setErrorMsg('');
   };
 
   const handleDelete = async (brand: BrandItem) => {
     if (brand.productCount > 0) {
-      setErrorMsg(
-        `No se puede eliminar la marca "${brand.name}" porque tiene ${brand.productCount} productos asociados.`
+      toast.error(
+        `No se puede eliminar "${brand.name}" porque tiene ${brand.productCount} productos asociados.`
       );
       return;
     }
 
     if (!confirm(`¿Estás seguro de eliminar la marca "${brand.name}"?`)) return;
-
-    setErrorMsg('');
-    setSuccessMsg('');
 
     try {
       const res = await fetch(`/api/admin/brands?id=${brand._id}`, {
@@ -117,10 +110,10 @@ export default function AdminBrandsPage() {
         throw new Error(json.message || 'No se pudo eliminar la marca');
       }
 
-      setSuccessMsg('Marca eliminada correctamente');
+      toast.success('Marca eliminada correctamente');
       fetchBrands();
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error al eliminar');
+      toast.error(err instanceof Error ? err.message : 'Error al eliminar');
     }
   };
 
@@ -140,22 +133,6 @@ export default function AdminBrandsPage() {
             </p>
           </div>
         </div>
-
-        {/* Success Alert */}
-        {successMsg && (
-          <div className="p-4 bg-[#007d48]/10 border border-[#007d48] text-[#007d48] text-xs font-semibold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-        )}
-
-        {/* Error Alert */}
-        {errorMsg && (
-          <div className="p-4 bg-[#d30005]/10 border border-[#d30005] text-[#d30005] text-xs font-semibold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Create / Edit Form */}

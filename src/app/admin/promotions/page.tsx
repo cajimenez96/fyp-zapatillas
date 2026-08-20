@@ -8,14 +8,13 @@ import {
   Plus,
   Edit2,
   Trash2,
-  AlertCircle,
-  CheckCircle2,
   Loader2,
   Image as ImageIcon,
   Eye,
   EyeOff,
 } from 'lucide-react';
 import { IProductImage } from '@/models/Product';
+import { toast } from '@/components/ui/sonner';
 
 interface PromotionItem {
   _id: string;
@@ -39,10 +38,6 @@ export default function AdminPromotionsPage() {
   const [order, setOrder] = useState<number>(1);
   const [active, setActive] = useState<boolean>(true);
 
-  // Alert State
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
-
   const fetchPromotions = useCallback(async () => {
     setLoading(true);
     try {
@@ -53,6 +48,7 @@ export default function AdminPromotionsPage() {
       }
     } catch (err) {
       console.error('Error al cargar promociones:', err);
+      toast.error('Error al cargar promociones');
     } finally {
       setLoading(false);
     }
@@ -66,13 +62,11 @@ export default function AdminPromotionsPage() {
     e.preventDefault();
     const primaryImg = bannerImages[0]?.url || '';
     if (!title.trim() || !primaryImg.trim()) {
-      setErrorMsg('Título e imagen son obligatorios');
+      toast.error('Título e imagen son obligatorios');
       return;
     }
 
     setSaving(true);
-    setErrorMsg('');
-    setSuccessMsg('');
 
     try {
       const url = '/api/admin/promotions';
@@ -93,7 +87,7 @@ export default function AdminPromotionsPage() {
         throw new Error(json.message || 'Error al guardar el banner promocional');
       }
 
-      setSuccessMsg(
+      toast.success(
         editingId
           ? 'Banner promocional actualizado correctamente'
           : 'Banner promocional creado exitosamente'
@@ -101,7 +95,7 @@ export default function AdminPromotionsPage() {
       resetForm();
       fetchPromotions();
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error procesando solicitud');
+      toast.error(err instanceof Error ? err.message : 'Error procesando solicitud');
     } finally {
       setSaving(false);
     }
@@ -114,7 +108,6 @@ export default function AdminPromotionsPage() {
     setBannerImages([]);
     setOrder(1);
     setActive(true);
-    setErrorMsg('');
   };
 
   const handleEdit = (promo: PromotionItem) => {
@@ -124,8 +117,6 @@ export default function AdminPromotionsPage() {
     setBannerImages([{ url: promo.imageUrl, isPrincipal: true, position: 1 }]);
     setOrder(promo.order || 1);
     setActive(promo.active);
-    setErrorMsg('');
-    setSuccessMsg('');
   };
 
   const handleToggleActive = async (promo: PromotionItem) => {
@@ -138,21 +129,18 @@ export default function AdminPromotionsPage() {
 
       const json = await res.json();
       if (json.ok) {
-        setSuccessMsg(
+        toast.success(
           !promo.active ? 'Banner activado en carrusel' : 'Banner desactivado del carrusel'
         );
         fetchPromotions();
       }
     } catch (err) {
-      console.error('Error al cambiar estado del banner:', err);
+      toast.error('Error al cambiar estado del banner');
     }
   };
 
   const handleDelete = async (promo: PromotionItem) => {
     if (!confirm(`¿Estás seguro de eliminar el banner "${promo.title}"?`)) return;
-
-    setErrorMsg('');
-    setSuccessMsg('');
 
     try {
       const res = await fetch(`/api/admin/promotions?id=${promo._id}`, {
@@ -165,10 +153,10 @@ export default function AdminPromotionsPage() {
         throw new Error(json.message || 'No se pudo eliminar el banner');
       }
 
-      setSuccessMsg('Banner promocional eliminado correctamente');
+      toast.success('Banner promocional eliminado correctamente');
       fetchPromotions();
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error al eliminar');
+      toast.error(err instanceof Error ? err.message : 'Error al eliminar');
     }
   };
 
@@ -188,22 +176,6 @@ export default function AdminPromotionsPage() {
             </p>
           </div>
         </div>
-
-        {/* Success Alert */}
-        {successMsg && (
-          <div className="p-4 bg-[#007d48]/10 border border-[#007d48] text-[#007d48] text-xs font-semibold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-        )}
-
-        {/* Error Alert */}
-        {errorMsg && (
-          <div className="p-4 bg-[#d30005]/10 border border-[#d30005] text-[#d30005] text-xs font-semibold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Form */}

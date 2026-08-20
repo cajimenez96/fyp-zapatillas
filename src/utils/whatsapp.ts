@@ -1,3 +1,5 @@
+import { formatPrice } from '@/utils/formatCurrency';
+
 export interface WhatsAppMessagePayload {
   orderNumber: string;
   guest: {
@@ -27,7 +29,7 @@ export function buildWhatsAppShareUrl(payload: WhatsAppMessagePayload): string {
   const itemsList = payload.items
     .map(
       (item) =>
-        `• ${item.qty}x ${item.name}\n   - Talle: ${item.size}\n   - Subtotal: $${item.subtotal.toLocaleString("es-AR")}`,
+        `• ${item.qty}x ${item.name}\n   - Talle: ${item.size}\n   - Subtotal: ${formatPrice(item.subtotal)}`,
     )
     .join("\n\n");
 
@@ -40,7 +42,7 @@ export function buildWhatsAppShareUrl(payload: WhatsAppMessagePayload): string {
 📦 *SOLICITUD DE PEDIDO #${payload.orderNumber}*
 ${itemsList}
 
-💰 *TOTAL A PAGAR:* $${payload.total.toLocaleString("es-AR")}
+💰 *TOTAL A PAGAR:* ${formatPrice(payload.total)}
 
 Ahí transfiero al alias: *${alias}*
 ¡Adjunto el comprobante de pago!`;

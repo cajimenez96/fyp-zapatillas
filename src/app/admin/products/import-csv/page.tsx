@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminNav } from '@/components/admin/AdminNav';
 import { Upload, ArrowLeft, CheckCircle2, AlertCircle, Loader2, FileSpreadsheet } from 'lucide-react';
+import { formatPrice } from '@/utils/formatCurrency';
+import { toast } from '@/components/ui/sonner';
 
 interface CSVRow {
   nombre: string;
@@ -28,7 +30,6 @@ export default function CSVImportPage() {
   // Result summary
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [summary, setSummary] = useState<any>(null);
-  const [errorMsg, setErrorMsg] = useState('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -36,7 +37,6 @@ export default function CSVImportPage() {
 
     setCsvFile(file);
     setLoading(true);
-    setErrorMsg('');
     setSummary(null);
 
     const reader = new FileReader();
@@ -84,8 +84,9 @@ export default function CSVImportPage() {
         }
 
         setParsedRows(rows);
+        toast.success(`Archivo procesado: ${rows.length} filas detectadas`);
       } catch (err) {
-        setErrorMsg(err instanceof Error ? err.message : 'Error al procesar el archivo CSV');
+        toast.error(err instanceof Error ? err.message : 'Error al procesar el archivo CSV');
         setParsedRows([]);
       } finally {
         setLoading(false);
@@ -99,7 +100,6 @@ export default function CSVImportPage() {
     if (parsedRows.length === 0) return;
 
     setProcessing(true);
-    setErrorMsg('');
 
     try {
       const res = await fetch('/api/admin/products/import-csv', {
@@ -115,8 +115,11 @@ export default function CSVImportPage() {
       }
 
       setSummary(json.summary);
+      toast.success('¡Importación masiva completada!', {
+        description: `${json.summary?.createdCount ?? 0} creados, ${json.summary?.updatedCount ?? 0} actualizados.`,
+      });
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error procesando la importación');
+      toast.error(err instanceof Error ? err.message : 'Error procesando la importación');
     } finally {
       setProcessing(false);
     }
@@ -177,14 +180,6 @@ export default function CSVImportPage() {
             </p>
           )}
         </div>
-
-        {/* Alerts */}
-        {errorMsg && (
-          <div className="p-4 bg-[#d30005]/10 border border-[#d30005] text-[#d30005] text-xs font-semibold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
 
         {/* Results Summary Box */}
         {summary && (
@@ -288,7 +283,7 @@ export default function CSVImportPage() {
                       <td className="py-2 px-3">{row.marca}</td>
                       <td className="py-2 px-3">{row.tipo}</td>
                       <td className="py-2 px-3 font-semibold">{row.genero}</td>
-                      <td className="py-2 px-3 text-right font-bold">${row.precio.toLocaleString('es-AR')}</td>
+                      <td className="py-2 px-3 text-right font-bold">{formatPrice(row.precio)}</td>
                       <td className="py-2 px-3 text-center font-bold">{row.talle}</td>
                       <td className="py-2 px-3 text-center font-extrabold">{row.stock}</td>
                     </tr>

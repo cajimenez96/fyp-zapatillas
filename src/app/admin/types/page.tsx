@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { AdminNav } from '@/components/admin/AdminNav';
-import { Plus, Edit2, Trash2, AlertCircle, CheckCircle2, Loader2, Layers } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, Layers } from 'lucide-react';
+import { toast } from '@/components/ui/sonner';
 
 interface TypeItem {
   _id: string;
@@ -21,10 +22,6 @@ export default function AdminTypesPage() {
   const [typeName, setTypeName] = useState('');
   const [typeDescription, setTypeDescription] = useState('');
 
-  // Alerts State
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
-
   const fetchTypes = useCallback(async () => {
     setLoading(true);
     try {
@@ -35,6 +32,7 @@ export default function AdminTypesPage() {
       }
     } catch (err) {
       console.error('Error al cargar tipos de calzado:', err);
+      toast.error('Error al cargar tipos de calzado');
     } finally {
       setLoading(false);
     }
@@ -46,11 +44,12 @@ export default function AdminTypesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!typeName.trim()) return;
+    if (!typeName.trim()) {
+      toast.error('El nombre del tipo es obligatorio');
+      return;
+    }
 
     setSaving(true);
-    setErrorMsg('');
-    setSuccessMsg('');
 
     try {
       const url = '/api/admin/types';
@@ -71,7 +70,7 @@ export default function AdminTypesPage() {
         throw new Error(json.message || 'Error al guardar el tipo de calzado');
       }
 
-      setSuccessMsg(
+      toast.success(
         editingId
           ? 'Tipo de calzado actualizado correctamente'
           : 'Tipo de calzado creado exitosamente'
@@ -81,7 +80,7 @@ export default function AdminTypesPage() {
       setEditingId(null);
       fetchTypes();
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error procesando solicitud');
+      toast.error(err instanceof Error ? err.message : 'Error procesando solicitud');
     } finally {
       setSaving(false);
     }
@@ -91,29 +90,23 @@ export default function AdminTypesPage() {
     setEditingId(type._id);
     setTypeName(type.name);
     setTypeDescription(type.description || '');
-    setErrorMsg('');
-    setSuccessMsg('');
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
     setTypeName('');
     setTypeDescription('');
-    setErrorMsg('');
   };
 
   const handleDelete = async (type: TypeItem) => {
     if (type.productCount > 0) {
-      setErrorMsg(
+      toast.error(
         `No se puede eliminar el tipo "${type.name}" porque tiene ${type.productCount} productos asociados.`
       );
       return;
     }
 
     if (!confirm(`¿Estás seguro de eliminar el tipo de calzado "${type.name}"?`)) return;
-
-    setErrorMsg('');
-    setSuccessMsg('');
 
     try {
       const res = await fetch(`/api/admin/types?id=${type._id}`, {
@@ -126,10 +119,10 @@ export default function AdminTypesPage() {
         throw new Error(json.message || 'No se pudo eliminar el tipo de calzado');
       }
 
-      setSuccessMsg('Tipo de calzado eliminado correctamente');
+      toast.success('Tipo de calzado eliminado correctamente');
       fetchTypes();
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error al eliminar');
+      toast.error(err instanceof Error ? err.message : 'Error al eliminar');
     }
   };
 
@@ -149,22 +142,6 @@ export default function AdminTypesPage() {
             </p>
           </div>
         </div>
-
-        {/* Success Alert */}
-        {successMsg && (
-          <div className="p-4 bg-[#007d48]/10 border border-[#007d48] text-[#007d48] text-xs font-semibold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-        )}
-
-        {/* Error Alert */}
-        {errorMsg && (
-          <div className="p-4 bg-[#d30005]/10 border border-[#d30005] text-[#d30005] text-xs font-semibold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Create / Edit Form */}

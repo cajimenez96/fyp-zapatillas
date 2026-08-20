@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { AdminNav } from '@/components/admin/AdminNav';
 import { BarChart3, DollarSign, ShoppingBag, TrendingUp, CreditCard, Banknote, Loader2 } from 'lucide-react';
+import { formatPrice } from '@/utils/formatCurrency';
 
 interface ReportData {
   totalRevenue: number;
@@ -68,7 +69,7 @@ export default function AdminReportsPage() {
                   <DollarSign className="w-5 h-5 text-[#007d48]" />
                 </div>
                 <div className="text-2xl font-extrabold text-[#111111]">
-                  ${reports.totalRevenue.toLocaleString('es-AR')}
+                  {formatPrice(reports.totalRevenue)}
                 </div>
                 <p className="text-[11px] text-[#007d48] font-bold">
                   {reports.completedOrders} pedidos completados
@@ -84,7 +85,7 @@ export default function AdminReportsPage() {
                   <TrendingUp className="w-5 h-5 text-[#f59e0b]" />
                 </div>
                 <div className="text-2xl font-extrabold text-[#111111]">
-                  ${reports.pendingRevenue.toLocaleString('es-AR')}
+                  {formatPrice(reports.pendingRevenue)}
                 </div>
                 <p className="text-[11px] text-[#f59e0b] font-bold">
                   {reports.pendingOrders} pedidos pendientes
@@ -149,7 +150,7 @@ export default function AdminReportsPage() {
                         </div>
                         <div className="text-right">
                           <span className="font-extrabold text-sm text-[#111111] block">
-                            ${prod.totalAmount.toLocaleString('es-AR')}
+                            {formatPrice(prod.totalAmount)}
                           </span>
                           <span className="text-[10px] text-[#707072] font-semibold">
                             {prod.qty} pares vendidos
@@ -179,7 +180,7 @@ export default function AdminReportsPage() {
                       </div>
                     </div>
                     <span className="font-extrabold text-base text-[#111111]">
-                      ${reports.transferSales.toLocaleString('es-AR')}
+                      {formatPrice(reports.transferSales)}
                     </span>
                   </div>
 
@@ -194,7 +195,7 @@ export default function AdminReportsPage() {
                       </div>
                     </div>
                     <span className="font-extrabold text-base text-[#111111]">
-                      ${reports.cashSales.toLocaleString('es-AR')}
+                      {formatPrice(reports.cashSales)}
                     </span>
                   </div>
                 </div>

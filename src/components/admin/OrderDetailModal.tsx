@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, MessageSquare, Check, Ban, Clock, Loader2, ShieldCheck, Edit3 } from 'lucide-react';
 import { OrderStatus } from '@/models/Order';
+import { formatPrice } from '@/utils/formatCurrency';
 
 export interface AdminOrderItem {
   _id: string;
@@ -179,9 +180,9 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                   </p>
                 </div>
                 <div className="text-right font-extrabold text-[#111111]">
-                  ${item.subtotal.toLocaleString('es-AR')}
+                  {formatPrice(item.subtotal)}
                   <span className="block text-[10px] font-medium text-[#707072]">
-                    ${item.unitPrice.toLocaleString('es-AR')} c/u
+                    {formatPrice(item.unitPrice)} c/u
                   </span>
                 </div>
               </div>
@@ -190,17 +191,17 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
             <div className="p-4 bg-white space-y-1">
               {order.discount > 0 && (
                 <div className="flex justify-between text-xs text-[#707072]">
-                  <span>Subtotal</span><span>${order.subtotal.toLocaleString('es-AR')}</span>
+                  <span>Subtotal</span><span>{formatPrice(order.subtotal)}</span>
                 </div>
               )}
               {order.discount > 0 && (
                 <div className="flex justify-between text-xs text-[#007d48] font-semibold">
-                  <span>Descuento</span><span>-${order.discount.toLocaleString('es-AR')}</span>
+                  <span>Descuento</span><span>-{formatPrice(order.discount)}</span>
                 </div>
               )}
               <div className="flex justify-between items-center text-sm font-extrabold text-[#111111]">
                 <span>TOTAL DE LA VENTA:</span>
-                <span className="text-xl">${order.total.toLocaleString('es-AR')}</span>
+                <span className="text-xl">{formatPrice(order.total)}</span>
               </div>
             </div>
           </div>

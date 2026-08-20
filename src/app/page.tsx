@@ -41,9 +41,7 @@ function HomeContent() {
   const { addToCart } = useCart();
 
   useEffect(() => {
-    if (genderQueryParam) {
-      setSelectedGender(genderQueryParam);
-    }
+    setSelectedGender(genderQueryParam);
   }, [genderQueryParam]);
 
   // 1. Fetch Promotions

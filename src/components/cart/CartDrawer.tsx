@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { X, ShoppingBag, Plus, Minus, Trash2, ArrowRight, Tag, Zap } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { formatPrice } from '@/utils/formatCurrency';
 
 const WHOLESALE_THRESHOLD = 5;
 
@@ -166,11 +167,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onStartCheckout }) => {
                         {/* Subtotal with optional wholesale highlight */}
                         <div className="text-right">
                           <span className={`font-extrabold text-sm ${isDiscounted ? 'text-[#007d48]' : 'text-[#111111]'}`}>
-                            ${(effectivePrice * item.qty).toLocaleString('es-AR')}
+                            {formatPrice(effectivePrice * item.qty)}
                           </span>
                           {isDiscounted && (
                             <span className="block text-[10px] text-[#707072] line-through">
-                              ${(item.retailPrice * item.qty).toLocaleString('es-AR')}
+                              {formatPrice(item.retailPrice * item.qty)}
                             </span>
                           )}
                         </div>
@@ -188,7 +189,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onStartCheckout }) => {
               <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between text-[#707072]">
                   <span>Subtotal</span>
-                  <span>${subtotal.toLocaleString('es-AR')}</span>
+                  <span>{formatPrice(subtotal)}</span>
                 </div>
                 {isWholesale && (
                   <div className="flex justify-between text-[#007d48] font-semibold">
@@ -202,7 +203,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onStartCheckout }) => {
                 </div>
                 <div className="flex justify-between font-extrabold text-base text-[#111111] pt-2 border-t border-[#e5e5e5]">
                   <span>Total estimado</span>
-                  <span>${subtotal.toLocaleString('es-AR')}</span>
+                  <span>{formatPrice(subtotal)}</span>
                 </div>
               </div>
 

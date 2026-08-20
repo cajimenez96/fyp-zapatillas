@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { Eye, AlertCircle, Tag } from 'lucide-react';
 import { IProductImage, ISizeStock } from '@/models/Product';
 
+import { formatPrice } from '@/utils/formatCurrency';
+
 export interface FormattedProduct {
   _id: string;
   name: string;
@@ -135,11 +137,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Dual Price Row */}
         <div className="flex items-baseline gap-2 mt-1 flex-wrap">
           <span className="font-extrabold text-lg text-[#111111]">
-            ${retailPrice.toLocaleString('es-AR')}
+            {formatPrice(retailPrice)}
           </span>
           {hasWholesaleDiscount && (
             <span className="text-xs font-bold text-[#007d48] bg-[#007d48]/10 px-2 py-0.5 rounded-full">
-              Mayorista: ${wholesalePrice.toLocaleString('es-AR')}
+              Mayorista: {formatPrice(wholesalePrice)}
             </span>
           )}
         </div>

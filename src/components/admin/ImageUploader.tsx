@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { Upload, Link as LinkIcon, Trash2, Check, Loader2, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { Upload, Link as LinkIcon, Trash2, Check, Loader2, Image as ImageIcon } from 'lucide-react';
 import { IProductImage } from '@/models/Product';
+import { toast } from '@/components/ui/sonner';
 
 interface ImageUploaderProps {
   images: IProductImage[];
@@ -19,7 +20,6 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const [activeTab, setActiveTab] = useState<'upload' | 'url'>('upload');
   const [urlInput, setUrlInput] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
 
   // Handle Local File Upload to ImageKit
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,7 +27,6 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     if (!files || files.length === 0) return;
 
     setUploading(true);
-    setErrorMsg('');
 
     try {
       const file = files[0];
@@ -54,8 +53,9 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       };
 
       onChange([...images, newImage]);
+      toast.success('Imagen subida con éxito a ImageKit');
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error al cargar el archivo');
+      toast.error(err instanceof Error ? err.message : 'Error al cargar el archivo');
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -138,14 +138,6 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           <LinkIcon className="w-3.5 h-3.5" /> Pegar Link URL Externa
         </button>
       </div>
-
-      {/* Alert Error */}
-      {errorMsg && (
-        <div className="p-3 bg-[#d30005]/10 border border-[#d30005] text-[#d30005] text-xs font-semibold flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span>{errorMsg}</span>
-        </div>
-      )}
 
       {/* Tab 1: File Upload (ImageKit Dropzone) */}
       {activeTab === 'upload' && (

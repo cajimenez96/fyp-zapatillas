@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import React from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ShoppingBag,
   Package,
@@ -14,7 +14,7 @@ import {
   Shield,
   Settings,
   Boxes,
-} from 'lucide-react';
+} from "lucide-react";
 
 export const AdminNav: React.FC = () => {
   const pathname = usePathname();
@@ -22,23 +22,23 @@ export const AdminNav: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/admin/auth/logout', { method: 'POST' });
-      router.push('/admin/login');
+      await fetch("/api/admin/auth/logout", { method: "POST" });
+      router.push("/admin/login");
       router.refresh();
     } catch (err) {
-      console.error('Error al cerrar sesión:', err);
+      console.error("Error al cerrar sesión:", err);
     }
   };
 
   const links = [
-    { label: 'Solicitudes', href: '/admin/orders', icon: ShoppingBag },
-    { label: 'Productos', href: '/admin/products', icon: Package },
-    { label: 'Control Stock', href: '/admin/stock', icon: Boxes },
-    { label: 'Marcas', href: '/admin/brands', icon: Tag },
-    { label: 'Tipos', href: '/admin/types', icon: Layers },
-    { label: 'Promociones', href: '/admin/promotions', icon: ImageIcon },
-    { label: 'Reportes', href: '/admin/reports', icon: BarChart3 },
-    { label: 'Ajustes', href: '/admin/settings', icon: Settings },
+    { label: "Solicitudes", href: "/admin/orders", icon: ShoppingBag },
+    { label: "Productos", href: "/admin/products", icon: Package },
+    { label: "Control Stock", href: "/admin/stock", icon: Boxes },
+    { label: "Marcas", href: "/admin/brands", icon: Tag },
+    { label: "Tipos", href: "/admin/types", icon: Layers },
+    { label: "Promociones", href: "/admin/promotions", icon: ImageIcon },
+    { label: "Reportes", href: "/admin/reports", icon: BarChart3 },
+    { label: "Ajustes", href: "/admin/settings", icon: Settings },
   ];
 
   return (
@@ -49,8 +49,11 @@ export const AdminNav: React.FC = () => {
           <div className="p-2 bg-white/10 rounded-full text-white">
             <Shield className="w-5 h-5" />
           </div>
-          <Link href="/admin/orders" className="font-extrabold text-xl tracking-tighter uppercase cursor-pointer">
-            FP <span className="text-[#9e9ea0] font-light">Admin</span>
+          <Link
+            href="/admin/orders"
+            className="font-extrabold text-xl tracking-tighter uppercase cursor-pointer"
+          >
+            <span className="text-[#9e9ea0] font-light">Admin</span>
           </Link>
         </div>
 
@@ -65,8 +68,8 @@ export const AdminNav: React.FC = () => {
                 href={item.href}
                 className={`px-3 py-2 text-xs font-bold uppercase tracking-wider rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${
                   isActive
-                    ? 'bg-white text-[#111111] shadow-xs'
-                    : 'text-[#9e9ea0] hover:text-white hover:bg-white/10'
+                    ? "bg-white text-[#111111] shadow-xs"
+                    : "text-[#9e9ea0] hover:text-white hover:bg-white/10"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -96,7 +99,9 @@ export const AdminNav: React.FC = () => {
               key={item.href}
               href={item.href}
               className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-full whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
-                isActive ? 'bg-white text-[#111111]' : 'text-[#9e9ea0] hover:text-white'
+                isActive
+                  ? "bg-white text-[#111111]"
+                  : "text-[#9e9ea0] hover:text-white"
               }`}
             >
               <Icon className="w-3.5 h-3.5" />

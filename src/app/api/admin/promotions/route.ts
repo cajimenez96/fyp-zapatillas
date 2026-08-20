@@ -49,9 +49,11 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     await connectToDatabase();
-    const { id, title, description, imageUrl, active, order } = await req.json();
+    const body = await req.json();
+    const promoId = body._id || body.id;
+    const { title, description, imageUrl, active, order } = body;
 
-    if (!id) {
+    if (!promoId) {
       return NextResponse.json(
         { ok: false, error: 'BAD_REQUEST', message: 'El ID de la promoción es obligatorio' },
         { status: 400 }
@@ -65,8 +67,8 @@ export async function PUT(req: NextRequest) {
     if (active !== undefined) updateData.active = Boolean(active);
     if (order !== undefined) updateData.order = Number(order);
 
-    const updated = await Promotion.findByIdAndUpdate(id, updateData, {
-      new: true,
+    const updated = await Promotion.findByIdAndUpdate(promoId, updateData, {
+      returnDocument: 'after',
       runValidators: true,
     });
 

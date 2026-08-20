@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { Upload, Link as LinkIcon, Trash2, Check, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Upload, Link as LinkIcon, Trash2, Check, Loader2, Image as ImageIcon, Star } from 'lucide-react';
 import { IProductImage } from '@/models/Product';
 import { toast } from '@/components/ui/sonner';
 
@@ -74,6 +74,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
     onChange([...images, newImage]);
     setUrlInput('');
+    toast.success('Enlace de imagen agregado');
   };
 
   // Set Primary Image
@@ -83,6 +84,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       isPrincipal: idx === index,
     }));
     onChange(updated);
+    toast.info(`Imagen #${index + 1} establecida como portada`);
   };
 
   // Remove / Delete Image
@@ -108,6 +110,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     }
 
     onChange(filtered);
+    toast.success('Imagen eliminada');
   };
 
   return (
@@ -145,27 +148,32 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           {uploading ? (
             <div className="py-4 space-y-2 flex flex-col items-center justify-center animate-pulse">
               <Loader2 className="w-8 h-8 text-[#111111] animate-spin" />
-              <span className="text-xs font-bold text-[#111111]">
-                Subiendo imagen a ImageKit CDN...
-              </span>
+              <p className="text-xs font-bold text-[#111111]">Optimizando y subiendo imagen a CDN...</p>
             </div>
           ) : (
             <>
-              <ImageIcon className="w-8 h-8 text-[#707072] mx-auto" />
+              <div className="mx-auto w-10 h-10 bg-white border border-[#e5e5e5] flex items-center justify-center text-[#707072]">
+                <ImageIcon className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-[#111111]">
+                  Arrastrá tu foto acá o hacé clic para explorar
+                </p>
+                <p className="text-[11px] text-[#707072]">
+                  Soporta PNG, JPG, WEBP optimizados automáticamente en ImageKit
+                </p>
+              </div>
               <div>
-                <label className="cursor-pointer py-2.5 px-5 bg-[#111111] hover:bg-black text-white font-bold text-xs uppercase tracking-wider rounded-full inline-flex items-center gap-2 shadow-md">
-                  <Upload className="w-4 h-4" /> Seleccionar Imagen Local
+                <label className="cursor-pointer py-2 px-5 bg-[#111111] hover:bg-black text-white font-bold text-xs uppercase tracking-wider rounded-none inline-block transition-all shadow-sm active:scale-95">
+                  Seleccionar Archivo
                   <input
                     type="file"
-                    accept="image/png, image/jpeg, image/webp, image/gif"
+                    accept="image/png, image/jpeg, image/webp"
                     onChange={handleFileUpload}
                     className="hidden"
                   />
                 </label>
               </div>
-              <p className="text-[11px] text-[#707072]">
-                Formatos permitidos: PNG, JPG, WEBP. Optimización automática en CDN.
-              </p>
             </>
           )}
         </div>
@@ -192,52 +200,75 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         </div>
       )}
 
-      {/* Thumbnails Gallery Rail */}
+      {/* Thumbnails Gallery Rail with Horizontal Scroll */}
       {images.length > 0 && (
         <div className="space-y-2 pt-2">
-          <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#111111]">
-            Imágenes Cargadas ({images.length})
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#111111]">
+              Imágenes Cargadas ({images.length})
+            </h4>
+            {images.length > 2 && (
+              <span className="text-[10px] text-[#707072] font-semibold">
+                Deslizá horizontalmente para ver todas →
+              </span>
+            )}
+          </div>
+
+          <div className="flex gap-3 overflow-x-auto pb-3 pt-1 scrollbar-thin">
             {images.map((img, idx) => (
               <div
                 key={idx}
-                className={`p-3 bg-white border flex items-center gap-3 transition-all ${
-                  img.isPrincipal ? 'border-[#111111] ring-1 ring-[#111111]' : 'border-[#e5e5e5]'
+                className={`w-44 min-w-[176px] bg-white border flex flex-col overflow-hidden transition-all shadow-xs group flex-shrink-0 ${
+                  img.isPrincipal ? 'border-[#111111] ring-2 ring-[#111111]' : 'border-[#e5e5e5]'
                 }`}
               >
-                <div className="relative w-14 h-14 bg-[#f5f5f5] flex-shrink-0 border border-[#e5e5e5]">
+                {/* Image Preview Container */}
+                <div className="relative w-full aspect-square bg-[#f5f5f5] overflow-hidden">
                   <Image
                     src={img.url}
-                    alt={`Preview ${idx + 1}`}
+                    alt={`Foto ${idx + 1}`}
                     fill
-                    sizes="56px"
-                    className="object-cover object-center"
+                    sizes="176px"
+                    className="object-cover object-center group-hover:scale-105 transition-transform duration-300"
                   />
+
+                  {/* Principal Badge */}
+                  {img.isPrincipal && (
+                    <span className="absolute top-2 left-2 z-10 bg-[#111111] text-white text-[10px] font-black uppercase px-2 py-0.5 tracking-wider shadow-md">
+                      ★ Portada
+                    </span>
+                  )}
+
+                  {/* Position Tag */}
+                  <span className="absolute bottom-2 left-2 z-10 bg-black/70 backdrop-blur-xs text-white text-[10px] font-extrabold px-1.5 py-0.5">
+                    #{idx + 1}
+                  </span>
+
+                  {/* Delete Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(idx)}
+                    className="absolute top-2 right-2 z-10 p-1.5 bg-white/95 hover:bg-[#d30005] text-[#707072] hover:text-white rounded-full shadow-md transition-all cursor-pointer"
+                    title="Eliminar imagen"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
 
-                <div className="flex-1 min-w-0 space-y-1">
-                  <p className="text-[11px] text-[#707072] truncate">{img.url}</p>
-                  <label className="flex items-center gap-1.5 text-[11px] font-bold text-[#111111] cursor-pointer">
-                    <input
-                      type="radio"
-                      name="principalImage"
-                      checked={img.isPrincipal}
-                      onChange={() => handleSetPrincipal(idx)}
-                      className="accent-[#111111] cursor-pointer"
-                    />
-                    <span>{img.isPrincipal ? '★ Portada Principal' : 'Establecer Portada'}</span>
-                  </label>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImage(idx)}
-                  className="p-1.5 text-[#707072] hover:text-[#d30005] hover:bg-[#d30005]/10 rounded-full transition-colors cursor-pointer"
-                  title="Eliminar imagen"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {/* Footer Action */}
+                {img.isPrincipal ? (
+                  <div className="py-2 px-3 bg-[#111111] text-white text-[11px] font-extrabold uppercase tracking-wider text-center flex items-center justify-center gap-1">
+                    <Check className="w-3.5 h-3.5 text-[#00ff88]" /> Portada Activa
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleSetPrincipal(idx)}
+                    className="py-2 px-3 bg-[#f5f5f5] hover:bg-[#111111] text-[#111111] hover:text-white text-[11px] font-extrabold uppercase tracking-wider text-center transition-colors cursor-pointer border-t border-[#e5e5e5] flex items-center justify-center gap-1.5"
+                  >
+                    <Star className="w-3.5 h-3.5" /> Usar de Portada
+                  </button>
+                )}
               </div>
             ))}
           </div>

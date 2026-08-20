@@ -166,16 +166,16 @@ export async function PUT(req: NextRequest) {
   try {
     await connectToDatabase();
     const body = await req.json();
-    const { id, name, description, retailPrice, wholesalePrice, active, images, sizesStock } = body;
+    const productId = body._id || body.id;
+    const { name, description, retailPrice, wholesalePrice, active, images, sizesStock, brandId, typeId, gender } = body;
 
-    if (!id) {
+    if (!productId) {
       return NextResponse.json(
         { ok: false, error: 'BAD_REQUEST', message: 'El ID del producto es obligatorio' },
         { status: 400 }
       );
     }
 
-    // Note: brandId, typeId, gender are locked/immutable per business rules
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateFields: Record<string, any> = {};
 
@@ -183,12 +183,15 @@ export async function PUT(req: NextRequest) {
     if (description !== undefined) updateFields.description = description.trim();
     if (retailPrice !== undefined) updateFields.retailPrice = Number(retailPrice);
     if (wholesalePrice !== undefined) updateFields.wholesalePrice = Number(wholesalePrice);
+    if (brandId !== undefined) updateFields.brandId = brandId;
+    if (typeId !== undefined) updateFields.typeId = typeId;
+    if (gender !== undefined) updateFields.gender = gender;
     if (active !== undefined) updateFields.active = Boolean(active);
     if (images !== undefined) updateFields.images = images;
     if (sizesStock !== undefined) updateFields.sizesStock = sizesStock;
 
-    const updatedProduct = await Product.findByIdAndUpdate(id, updateFields, {
-      new: true,
+    const updatedProduct = await Product.findByIdAndUpdate(productId, updateFields, {
+      returnDocument: 'after',
       runValidators: true,
     });
 

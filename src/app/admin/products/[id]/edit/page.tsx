@@ -18,6 +18,7 @@ interface FullProduct {
   active: boolean;
   images: IProductImage[];
   sizesStock: ISizeStock[];
+  displayedSizes?: number[];
 }
 
 export default function EditProductPage() {

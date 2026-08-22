@@ -221,30 +221,35 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-5 gap-2">
-                  {product.sizesStock.map((s) => {
-                    const hasStock = s.stock > 0;
-                    const isSelected = selectedSize === s.size;
+                  {product.sizesStock
+                    .filter((s) => {
+                      const displayedSizes = (product as any).displayedSizes || [];
+                      return displayedSizes.length === 0 || displayedSizes.includes(s.size);
+                    })
+                    .map((s) => {
+                      const hasStock = s.stock > 0;
+                      const isSelected = selectedSize === s.size;
 
-                    return (
-                      <button
-                        key={s.size}
-                        disabled={!hasStock}
-                        onClick={() => {
-                          setSelectedSize(s.size);
-                          setQuantity(1);
-                        }}
-                        className={`h-11 font-bold text-xs rounded-none border transition-all ${
-                          isSelected
-                            ? 'bg-[#111111] text-white border-[#111111] shadow-xs cursor-pointer'
-                            : hasStock
-                            ? 'bg-white text-[#111111] border-[#e5e5e5] hover:border-[#111111] cursor-pointer'
-                            : 'bg-[#f5f5f5] text-[#cacacb] border-transparent cursor-not-allowed line-through'
-                        }`}
-                      >
-                        {s.size}
-                      </button>
-                    );
-                  })}
+                      return (
+                        <button
+                          key={s.size}
+                          disabled={!hasStock}
+                          onClick={() => {
+                            setSelectedSize(s.size);
+                            setQuantity(1);
+                          }}
+                          className={`h-11 font-bold text-xs rounded-none border transition-all ${
+                            isSelected
+                              ? 'bg-[#111111] text-white border-[#111111] shadow-xs cursor-pointer'
+                              : hasStock
+                              ? 'bg-white text-[#111111] border-[#e5e5e5] hover:border-[#111111] cursor-pointer'
+                              : 'bg-[#f5f5f5] text-[#cacacb] border-transparent cursor-not-allowed line-through'
+                          }`}
+                        >
+                          {s.size}
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SlidersHorizontal, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface FilterOption {
@@ -36,9 +36,40 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   onClearFilters,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [availableSizes, setAvailableSizes] = useState<number[]>([]);
+  const [availableGenders, setAvailableGenders] = useState<string[]>([]);
 
-  const availableSizes = Array.from({ length: 21 }, (_, i) => 25 + i); // 25 to 45
   const genders = ['Hombre', 'Mujer', 'Niño', 'Unisex'];
+
+  // Fetch available filters dynamically based on selected filters
+  useEffect(() => {
+    const fetchAvailableFilters = async () => {
+      try {
+        const params = new URLSearchParams();
+        if (selectedBrandIds.length > 0) {
+          params.append('brandId', selectedBrandIds.join(','));
+        }
+        if (selectedTypeIds.length > 0) {
+          params.append('typeId', selectedTypeIds.join(','));
+        }
+        if (selectedGender) {
+          params.append('gender', selectedGender);
+        }
+
+        const res = await fetch(`/api/catalog/available-filters?${params}`);
+        const json = await res.json();
+
+        if (json.ok && json.data) {
+          setAvailableSizes(json.data.sizes || []);
+          setAvailableGenders(json.data.genders || []);
+        }
+      } catch (err) {
+        console.error('Error fetching available filters:', err);
+      }
+    };
+
+    fetchAvailableFilters();
+  }, [selectedBrandIds, selectedTypeIds, selectedGender]);
 
   const hasActiveFilters =
     selectedBrandIds.length > 0 ||
@@ -165,29 +196,31 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           </div>
 
           {/* 4. Talles Grid Selector */}
-          <div>
-            <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2">
-              Talle Disponibles
-            </h4>
-            <div className="flex flex-wrap gap-1.5">
-              {availableSizes.map((size) => {
-                const isActive = selectedSize === size;
-                return (
-                  <button
-                    key={size}
-                    onClick={() => onSelectSize(isActive ? null : size)}
-                    className={`w-9 h-9 text-xs font-bold rounded-full transition-all flex items-center justify-center cursor-pointer ${
-                      isActive
-                        ? 'bg-[#111111] text-white shadow-xs'
-                        : 'bg-white text-[#111111] border border-[#e5e5e5] hover:border-[#111111]'
-                    }`}
-                  >
-                    {size}
-                  </button>
-                );
-              })}
+          {availableSizes.length > 0 && (
+            <div>
+              <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2">
+                Talle Disponibles
+              </h4>
+              <div className="flex flex-wrap gap-1.5">
+                {availableSizes.map((size) => {
+                  const isActive = selectedSize === size;
+                  return (
+                    <button
+                      key={size}
+                      onClick={() => onSelectSize(isActive ? null : size)}
+                      className={`w-9 h-9 text-xs font-bold rounded-full transition-all flex items-center justify-center cursor-pointer ${
+                        isActive
+                          ? 'bg-[#111111] text-white shadow-xs'
+                          : 'bg-white text-[#111111] border border-[#e5e5e5] hover:border-[#111111]'
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

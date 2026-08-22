@@ -20,12 +20,23 @@ export const Header: React.FC<HeaderProps> = ({ onSearchChange }) => {
   const [searchTerm, setSearchTerm] = useState(
     searchParams.get("search") || "",
   );
+  const [topBarWhatsappUrl, setTopBarWhatsappUrl] = useState("");
+  const [formattedPhone, setFormattedPhone] = useState("");
   const { totalItems, openCart } = useCart();
   const { settings, formatPhoneNumber } = useSettings();
 
   useEffect(() => {
     setSearchTerm(searchParams.get("search") || "");
   }, [searchParams]);
+
+  useEffect(() => {
+    if (settings.storePhone) {
+      const cleanPhone = settings.storePhone.replace(/[^0-9]/g, '');
+      const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(settings.whatsappInquiryMessage)}`;
+      setTopBarWhatsappUrl(url);
+      setFormattedPhone(formatPhoneNumber(settings.storePhone));
+    }
+  }, [settings.storePhone, settings.whatsappInquiryMessage, formatPhoneNumber]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -43,9 +54,6 @@ export const Header: React.FC<HeaderProps> = ({ onSearchChange }) => {
       router.replace(`/?${params.toString()}#catalogo`);
     }
   };
-
-  const cleanPhone = settings.storePhone.replace(/[^0-9]/g, '');
-  const topBarWhatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(settings.whatsappInquiryMessage)}`;
 
   const navLinks = [
     { label: "Todos", href: "/#catalogo" },
@@ -67,7 +75,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearchChange }) => {
         >
           <Phone className="w-3.5 h-3.5 text-[#007d48]" />
           <span>
-            Atención WhatsApp: <strong>{formatPhoneNumber(settings.storePhone)}</strong>
+            Atención WhatsApp: <strong>{formattedPhone || '-'}</strong>
           </span>
         </a>
         <div className="hidden md:flex gap-4 text-[#707072]">

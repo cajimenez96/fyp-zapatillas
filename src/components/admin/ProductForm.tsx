@@ -33,6 +33,7 @@ interface ProductFormProps {
     active: boolean;
     images: IProductImage[];
     sizesStock: ISizeStock[];
+    displayedSizes?: number[];
   };
   isEditing?: boolean;
 }
@@ -102,6 +103,12 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   // Sizes stock state: array of { size, stock }
   const [sizesStock, setSizesStock] = useState<ISizeStock[]>([]);
 
+  // Displayed sizes state: array of sizes to show in storefront
+  const [displayedSizes, setDisplayedSizes] = useState<number[]>([]);
+
+  // Toggle to show/hide sizes without stock
+  const [showHiddenSizes, setShowHiddenSizes] = useState(false);
+
   // 1. Fetch Brands & Types
   useEffect(() => {
     async function fetchOptions() {
@@ -134,6 +141,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         stock: 0,
       }));
       setSizesStock(initialized);
+      setDisplayedSizes([]);
     } else if (initialData?.sizesStock) {
       const defaultSizes = GENDER_SIZES[gender] || [];
       const stockMap = new Map(
@@ -149,6 +157,24 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     }
   }, [gender, isEditing, initialData]);
 
+  // 3. Initialize displayedSizes based on stock or saved displayedSizes
+  useEffect(() => {
+    if (!isEditing) {
+      const sizesWithStock = sizesStock
+        .filter((s) => s.stock > 0)
+        .map((s) => s.size);
+      setDisplayedSizes(sizesWithStock);
+    } else if (initialData && "displayedSizes" in initialData) {
+      const saved = (initialData as any).displayedSizes || [];
+      setDisplayedSizes(saved);
+    } else {
+      const sizesWithStock = sizesStock
+        .filter((s) => s.stock > 0)
+        .map((s) => s.size);
+      setDisplayedSizes(sizesWithStock);
+    }
+  }, [sizesStock, isEditing, initialData]);
+
   // Size Stock Helpers
   const handleStockChange = (size: number, newStock: number) => {
     const validStock = Math.max(0, newStock);
@@ -156,6 +182,18 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       prev.map((s) => (s.size === size ? { ...s, stock: validStock } : s)),
     );
   };
+
+  const handleToggleSizeDisplay = (size: number) => {
+    setDisplayedSizes((prev) =>
+      prev.includes(size)
+        ? prev.filter((s) => s !== size)
+        : [...prev, size].sort((a, b) => a - b)
+    );
+  };
+
+  const visibleSizesForToggle = showHiddenSizes
+    ? sizesStock
+    : sizesStock.filter((s) => s.stock > 0);
 
   // Submit Handler
   const handleSubmit = async (e: React.FormEvent) => {
@@ -236,6 +274,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             active,
             images: validImages,
             sizesStock,
+            displayedSizes,
           }
         : {
             name: name.trim(),
@@ -248,6 +287,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             active,
             images: validImages,
             sizesStock,
+            displayedSizes,
           };
 
       const res = await fetch(url, {
@@ -443,6 +483,56 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Visible Sizes Selector */}
+          <div className="bg-white border border-[#e5e5e5] p-6 space-y-4 shadow-sm">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-base font-extrabold uppercase tracking-tight text-[#111111]">
+                  Talles Visibles en Tienda
+                </h2>
+                <p className="text-xs text-[#707072] mt-1">
+                  Seleccioná qué talles se mostrarán en la página del producto
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHiddenSizes(!showHiddenSizes)}
+                className="text-xs font-bold px-3 py-2 rounded-full border border-[#e5e5e5] bg-white hover:bg-[#f5f5f5] transition-colors flex items-center gap-1.5 cursor-pointer"
+                title={showHiddenSizes ? "Ocultar talles sin stock" : "Mostrar talles sin stock"}
+              >
+                👁️ {showHiddenSizes ? "Ocultar sin stock" : "Mostrar sin stock"}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {visibleSizesForToggle.map((item) => (
+                <label
+                  key={item.size}
+                  className="flex items-center gap-2 p-3 bg-[#f5f5f5] border border-[#e5e5e5] hover:border-[#111111] cursor-pointer transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={displayedSizes.includes(item.size)}
+                    onChange={() => handleToggleSizeDisplay(item.size)}
+                    className="w-4 h-4 accent-[#111111] cursor-pointer"
+                  />
+                  <span className="text-xs font-extrabold text-[#111111]">
+                    {item.size}
+                    {item.stock === 0 && (
+                      <span className="text-[#cacacb] ml-1">(sin stock)</span>
+                    )}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            {displayedSizes.length === 0 && (
+              <div className="text-xs text-[#d30005] bg-[#fef2f2] border border-[#fecaca] p-3 rounded">
+                ⚠️ Ningún talle seleccionado. El producto no será visible en tienda.
+              </div>
+            )}
           </div>
         </div>
 

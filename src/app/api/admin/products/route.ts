@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
     const body = await req.json();
 
-    const { name, description, retailPrice, wholesalePrice, brandId, typeId, gender, active, images, sizesStock } = body;
+    const { name, description, retailPrice, wholesalePrice, brandId, typeId, gender, active, images, sizesStock, displayedSizes } = body;
 
     // Validations
     if (!name || !name.trim()) {
@@ -150,6 +150,7 @@ export async function POST(req: NextRequest) {
       active: active !== undefined ? Boolean(active) : true,
       images,
       sizesStock,
+      displayedSizes: displayedSizes || [],
     });
 
     return NextResponse.json({ ok: true, data: newProduct }, { status: 201 });
@@ -167,7 +168,7 @@ export async function PUT(req: NextRequest) {
     await connectToDatabase();
     const body = await req.json();
     const productId = body._id || body.id;
-    const { name, description, retailPrice, wholesalePrice, active, images, sizesStock, brandId, typeId, gender } = body;
+    const { name, description, retailPrice, wholesalePrice, active, images, sizesStock, brandId, typeId, gender, displayedSizes } = body;
 
     if (!productId) {
       return NextResponse.json(
@@ -189,6 +190,7 @@ export async function PUT(req: NextRequest) {
     if (active !== undefined) updateFields.active = Boolean(active);
     if (images !== undefined) updateFields.images = images;
     if (sizesStock !== undefined) updateFields.sizesStock = sizesStock;
+    if (displayedSizes !== undefined) updateFields.displayedSizes = displayedSizes;
 
     const updatedProduct = await Product.findByIdAndUpdate(productId, updateFields, {
       returnDocument: 'after',

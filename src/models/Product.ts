@@ -27,6 +27,7 @@ export interface IProduct {
   active: boolean;
   images: IProductImage[];
   sizesStock: ISizeStock[];
+  displayedSizes: number[];
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -109,6 +110,10 @@ const ProductSchema: Schema<IProductDocument> = new Schema(
     },
     sizesStock: {
       type: [SizeStockSchema],
+      default: [],
+    },
+    displayedSizes: {
+      type: [Number],
       default: [],
     },
   },

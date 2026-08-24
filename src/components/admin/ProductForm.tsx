@@ -10,7 +10,8 @@ import {
   Loader2,
   Lock,
 } from "lucide-react";
-import { GenderType, IProductImage, ISizeStock } from "@/models/Product";
+import type { GenderType, IProductImage, ISizeStock } from "@/models/Product";
+import { DEFAULT_GENDER_SIZES } from "@/constants/sizes";
 import { ImageUploader } from "./ImageUploader";
 import { toast } from "@/components/ui/sonner";
 
@@ -38,14 +39,6 @@ interface ProductFormProps {
   isEditing?: boolean;
 }
 
-// Standard size scales per Gender according to Product Spec section 2.4
-const GENDER_SIZES: Record<GenderType, number[]> = {
-  Hombre: [36, 37, 38, 39, 40, 41, 42, 43, 44, 45],
-  Mujer: [33, 34, 35, 36, 37, 38, 39, 40, 41, 42],
-  Niño: [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35],
-  Unisex: [36, 37, 38, 39, 40, 41, 42, 43, 44, 45],
-};
-
 export const ProductForm: React.FC<ProductFormProps> = ({
   initialData,
   isEditing = false,
@@ -54,6 +47,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
 
   const [brands, setBrands] = useState<OptionItem[]>([]);
   const [types, setTypes] = useState<OptionItem[]>([]);
+  const [genderSizes, setGenderSizes] = useState<Record<GenderType, number[]>>(DEFAULT_GENDER_SIZES);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -109,22 +103,25 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   // Toggle to show/hide sizes without stock
   const [showHiddenSizes, setShowHiddenSizes] = useState(false);
 
-  // 1. Fetch Brands & Types
+  // 1. Fetch Brands, Types & Dynamic Gender Sizes
   useEffect(() => {
     async function fetchOptions() {
       try {
-        const [brandsRes, typesRes] = await Promise.all([
+        const [brandsRes, typesRes, sizesRes] = await Promise.all([
           fetch("/api/brands"),
           fetch("/api/types"),
+          fetch("/api/sizes"),
         ]);
 
         const brandsJson = await brandsRes.json();
         const typesJson = await typesRes.json();
+        const sizesJson = await sizesRes.json();
 
         if (brandsJson.ok) setBrands(brandsJson.data);
         if (typesJson.ok) setTypes(typesJson.data);
+        if (sizesJson.ok && sizesJson.data) setGenderSizes(sizesJson.data);
       } catch (err) {
-        console.error("Error al cargar listas de marcas y tipos:", err);
+        console.error("Error al cargar listas de marcas, tipos y talles:", err);
       } finally {
         setLoadingOptions(false);
       }
@@ -132,30 +129,35 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     fetchOptions();
   }, []);
 
-  // 2. Initialize size scale stock when Gender changes (only in Create mode)
+  // 2. Initialize size scale stock when Gender or genderSizes changes
   useEffect(() => {
+    const scaleSizes = genderSizes[gender] || DEFAULT_GENDER_SIZES[gender] || [];
+
     if (!isEditing) {
-      const defaultSizes = GENDER_SIZES[gender] || [];
-      const initialized = defaultSizes.map((s) => ({
+      const initialized = scaleSizes.map((s) => ({
         size: s,
         stock: 0,
       }));
       setSizesStock(initialized);
       setDisplayedSizes([]);
     } else if (initialData?.sizesStock) {
-      const defaultSizes = GENDER_SIZES[gender] || [];
       const stockMap = new Map(
         initialData.sizesStock.map((s) => [s.size, s.stock]),
       );
 
-      const combined = defaultSizes.map((s) => ({
+      // Merge current scale sizes and any extra existing size already saved on the product
+      const allUniqueSizes = Array.from(
+        new Set([...scaleSizes, ...initialData.sizesStock.map((s) => s.size)])
+      ).sort((a, b) => a - b);
+
+      const combined = allUniqueSizes.map((s) => ({
         size: s,
         stock: stockMap.get(s) || 0,
       }));
 
       setSizesStock(combined);
     }
-  }, [gender, isEditing, initialData]);
+  }, [gender, genderSizes, isEditing, initialData]);
 
   // 3. Initialize displayedSizes based on stock or saved displayedSizes
   useEffect(() => {

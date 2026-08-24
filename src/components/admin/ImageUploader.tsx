@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { Upload, Link as LinkIcon, Trash2, Check, Loader2, Image as ImageIcon, Star } from 'lucide-react';
-import { IProductImage } from '@/models/Product';
+import type { IProductImage } from '@/models/Product';
 import { toast } from '@/components/ui/sonner';
 
 interface ImageUploaderProps {

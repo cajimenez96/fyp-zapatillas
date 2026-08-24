@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { Eye, AlertCircle, Tag } from 'lucide-react';
-import { IProductImage, ISizeStock } from '@/models/Product';
+import type { IProductImage, ISizeStock } from '@/models/Product';
 
 import { formatPrice } from '@/utils/formatCurrency';
 

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
-import { IPromotion } from '@/models/Promotion';
+import type { IPromotion } from '@/models/Promotion';
 
 interface PromoCarouselProps {
   promotions?: IPromotion[];

@@ -22,6 +22,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
+import { GenderSizesManager } from "@/components/admin/GenderSizesManager";
 
 export default function AdminSettingsPage() {
   // Identity & Contact
@@ -460,6 +461,9 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
             </div>
+
+            {/* SECCIÓN 5: Escala de Talles por Género (ABM) */}
+            <GenderSizesManager />
 
             {/* Submit Button */}
             <div className="pt-2">

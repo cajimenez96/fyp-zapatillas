@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, MessageSquare, Check, Ban, Clock, Loader2, ShieldCheck, Edit3 } from 'lucide-react';
-import { OrderStatus } from '@/models/Order';
+import type { OrderStatus } from '@/models/Order';
 import { formatPrice } from '@/utils/formatCurrency';
 
 export interface AdminOrderItem {

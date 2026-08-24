@@ -14,6 +14,7 @@ import {
   Shield,
   Settings,
   Boxes,
+  DollarSign,
 } from "lucide-react";
 
 export const AdminNav: React.FC = () => {
@@ -33,17 +34,18 @@ export const AdminNav: React.FC = () => {
   const links = [
     { label: "Solicitudes", href: "/admin/orders", icon: ShoppingBag },
     { label: "Productos", href: "/admin/products", icon: Package },
-    { label: "Control Stock", href: "/admin/stock", icon: Boxes },
+    { label: "Stock", href: "/admin/stock", icon: Boxes },
     { label: "Marcas", href: "/admin/brands", icon: Tag },
     { label: "Tipos", href: "/admin/types", icon: Layers },
     { label: "Promociones", href: "/admin/promotions", icon: ImageIcon },
     { label: "Reportes", href: "/admin/reports", icon: BarChart3 },
+    { label: "Contabilidad", href: "/admin/accounting", icon: DollarSign },
     { label: "Ajustes", href: "/admin/settings", icon: Settings },
   ];
 
   return (
     <header className="bg-[#111111] text-white border-b border-[#39393b] sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-4">
+      <div className="max-w-8xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-evenly gap-4">
         {/* Brand Lockup */}
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/10 rounded-full text-white">

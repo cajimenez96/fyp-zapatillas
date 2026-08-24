@@ -4,3 +4,6 @@ export { default as Product, type IProduct, type IProductDocument, type IProduct
 export { default as Order, type IOrder, type IOrderDocument, type IOrderItem, type ICustomerGuest, type OrderStatus, type PaymentMethodType } from './Order';
 export { default as SalesRecord, type ISalesRecord, type ISalesRecordDocument, type RecordedPaymentMethod } from './SalesRecord';
 export { default as Promotion, type IPromotion, type IPromotionDocument } from './Promotion';
+export { default as GenderSize, type IGenderSize, type IGenderSizeDocument } from './GenderSize';
+export { default as Expense, type IExpense, type IExpenseDocument, type ExpenseCategory } from './Expense';
+export { default as Settings, type ISettings, type ISettingsDocument } from './Settings';

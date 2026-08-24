@@ -1,288 +1,132 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load environment variables (defaults to .env.local or specified by ENV_FILE)
+// Load environment variables (supports ENV_FILE=.env.prod or defaults to .env.local)
 const envFile = process.env.ENV_FILE || '.env.local';
 dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 import mongoose from 'mongoose';
-import Brand from '../src/models/Brand';
-import FootwearType from '../src/models/FootwearType';
-import Product from '../src/models/Product';
-import Promotion from '../src/models/Promotion';
+import {
+  Brand,
+  FootwearType,
+  Product,
+  Promotion,
+  Order,
+  SalesRecord,
+  Expense,
+  GenderSize,
+  Settings,
+} from '../src/models';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/fp-zapatillas-dev';
 
 async function runSeed() {
   try {
-    console.log('🔄 Conectando a MongoDB en:', MONGODB_URI);
+    console.log('====================================================');
+    console.log(`🚀 INICIANDO RESET & SEED (${envFile})`);
+    console.log('====================================================');
+    console.log('🔄 Conectando a MongoDB en:', MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@'));
     await mongoose.connect(MONGODB_URI);
-    console.log('✅ Conexión establecida.');
+    console.log('✅ Conexión establecida con éxito.\n');
 
-    // Limpiar colecciones anteriores
-    console.log('🧹 Limpiando colecciones anteriores...');
-    await Brand.deleteMany({});
-    await FootwearType.deleteMany({});
-    await Product.deleteMany({});
-    await Promotion.deleteMany({});
+    // 1. Limpieza total de todas las colecciones
+    console.log('🧹 [1/4] Vaciando colecciones...');
+    await Promise.all([
+      Order.deleteMany({}),
+      SalesRecord.deleteMany({}),
+      Expense.deleteMany({}),
+      Product.deleteMany({}),
+      Promotion.deleteMany({}),
+      Brand.deleteMany({}),
+      FootwearType.deleteMany({}),
+      GenderSize.deleteMany({}),
+      Settings.deleteMany({}),
+    ]);
+    console.log('   ✓ Transaccionales (Orders, SalesRecords, Expenses) -> 0 registros');
+    console.log('   ✓ Catálogo y Marketing (Products, Promotions)      -> 0 registros');
+    console.log('   ✓ Maestras y Ajustes (Brands, Types, Sizes, Settings) -> Limpias\n');
 
-    // 1. Crear Marcas
-    console.log('🏷️  Creando Marcas...');
+    // 2. Crear Marcas Maestras
+    console.log('🏷️  [2/4] Creando Marcas Base...');
     const brandsData = [
       { name: 'Nike' },
       { name: 'Adidas' },
       { name: 'Puma' },
       { name: 'New Balance' },
       { name: 'Reebok' },
+      { name: 'Vans' },
+      { name: 'Converse' },
+      { name: 'Under Armour' },
+      { name: 'Fila' },
+      { name: 'Asics' },
     ];
     const createdBrands = await Brand.insertMany(brandsData);
-    const brandMap = new Map(createdBrands.map((b) => [b.name, b._id]));
+    console.log(`   ✓ ${createdBrands.length} marcas creadas: ${brandsData.map((b) => b.name).join(', ')}\n`);
 
-    // 2. Crear Tipos de Calzado
-    console.log('👟 Creando Tipos de Calzado...');
+    // 3. Crear Tipos de Calzado
+    console.log('👟 [3/4] Creando Tipos de Calzado...');
     const typesData = [
       { name: 'Zapatilla Running', description: 'Calzado técnico de alto rendimiento para correr' },
       { name: 'Zapatilla Urbana', description: 'Diseño casual y cómodo para uso diario' },
       { name: 'Zapatilla Deportiva', description: 'Para entrenamiento, gym y multideporte' },
       { name: 'Zapato Elegante', description: 'Calzado formal de vestir' },
       { name: 'Ojota', description: 'Calzado liviano e informal para verano' },
+      { name: 'Botines', description: 'Calzado para fútbol y césped sintético' },
+      { name: 'Sandalias', description: 'Calzado abierto y fresco' },
     ];
     const createdTypes = await FootwearType.insertMany(typesData);
-    const typeMap = new Map(createdTypes.map((t) => [t.name, t._id]));
+    console.log(`   ✓ ${createdTypes.length} tipos de calzado creados: ${typesData.map((t) => t.name).join(', ')}\n`);
 
-    // 3. Crear Promociones (Banners del carrusel)
-    console.log('🖼️  Creando Banners Promocionales...');
-    const promotionsData = [
-      {
-        title: 'Lanzamiento Exclusivo - 20% OFF en Efectivo',
-        description: 'Aprovechá nuestros descuentos especiales abonando en efectivo o transferencia',
-        imageUrl: 'https://images.unsplash.com/photo-1556906781-9a412961c28c?auto=format&fit=crop&w=1400&q=80',
-        active: true,
-        order: 1,
-      },
-      {
-        title: 'Colección Urban 2026',
-        description: 'Lo último en tendencias urbanas de Nike, Adidas y New Balance',
-        imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1400&q=80',
-        active: true,
-        order: 2,
-      },
+    // 4. Crear Escalas de Talles por Género
+    console.log('📏 [4/4] Inicializando Escalas de Talles y Ajustes...');
+    const genderSizesData = [
+      { gender: 'Hombre', sizes: [36, 37, 38, 39, 40, 41, 42, 43, 44, 45] },
+      { gender: 'Mujer', sizes: [33, 34, 35, 36, 37, 38, 39, 40, 41, 42] },
+      { gender: 'Niño', sizes: [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35] },
+      { gender: 'Unisex', sizes: [36, 37, 38, 39, 40, 41, 42, 43, 44, 45] },
     ];
-    await Promotion.insertMany(promotionsData);
+    await GenderSize.insertMany(genderSizesData);
+    console.log('   ✓ Escalas de talles creadas para Hombre, Mujer, Niño y Unisex');
 
-    // 4. Crear Productos
-    console.log('📦 Creando Productos y Stock por Talle...');
-    const productsData = [
-      {
-        name: 'Nike Air Max 90',
-        description: 'La mítica zapatilla Air Max 90 combina amortiguación de aire visible con un diseño icónico y duradero.',
-        price: 120000,
-        brandId: brandMap.get('Nike'),
-        typeId: typeMap.get('Zapatilla Running'),
-        gender: 'Hombre',
-        active: true,
-        images: [
-          {
-            url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
-            isPrincipal: true,
-            position: 1,
-          },
-          {
-            url: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=800&q=80',
-            isPrincipal: false,
-            position: 2,
-          },
-        ],
-        sizesStock: [
-          { size: 38, stock: 5 },
-          { size: 39, stock: 8 },
-          { size: 40, stock: 15 },
-          { size: 41, stock: 10 },
-          { size: 42, stock: 8 },
-          { size: 43, stock: 4 },
-          { size: 44, stock: 0 },
-        ],
-      },
-      {
-        name: 'Adidas Ultraboost Light',
-        description: 'Sentí la energía a cada paso con la tecnología Ultraboost de amortiguación responsiva extrema.',
-        price: 145000,
-        brandId: brandMap.get('Adidas'),
-        typeId: typeMap.get('Zapatilla Running'),
-        gender: 'Hombre',
-        active: true,
-        images: [
-          {
-            url: 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=800&q=80',
-            isPrincipal: true,
-            position: 1,
-          },
-        ],
-        sizesStock: [
-          { size: 39, stock: 4 },
-          { size: 40, stock: 10 },
-          { size: 41, stock: 12 },
-          { size: 42, stock: 6 },
-          { size: 43, stock: 2 },
-        ],
-      },
-      {
-        name: 'Nike Court Vision Low',
-        description: 'Inspirada en el básquet de los 80, esta zapatilla urbana combina cuero sintético duradero y estilo clásico.',
-        price: 89900,
-        brandId: brandMap.get('Nike'),
-        typeId: typeMap.get('Zapatilla Urbana'),
-        gender: 'Unisex',
-        active: true,
-        images: [
-          {
-            url: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=800&q=80',
-            isPrincipal: true,
-            position: 1,
-          },
-        ],
-        sizesStock: [
-          { size: 36, stock: 3 },
-          { size: 37, stock: 5 },
-          { size: 38, stock: 8 },
-          { size: 39, stock: 10 },
-          { size: 40, stock: 12 },
-          { size: 41, stock: 4 },
-          { size: 42, stock: 0 },
-        ],
-      },
-      {
-        name: 'Puma Carina 2.0',
-        description: 'Estilo ochentero relajado con plantilla SoftFoam+ para una pisada sumamente suave durante todo el día.',
-        price: 75000,
-        brandId: brandMap.get('Puma'),
-        typeId: typeMap.get('Zapatilla Urbana'),
-        gender: 'Mujer',
-        active: true,
-        images: [
-          {
-            url: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80',
-            isPrincipal: true,
-            position: 1,
-          },
-        ],
-        sizesStock: [
-          { size: 34, stock: 2 },
-          { size: 35, stock: 6 },
-          { size: 36, stock: 10 },
-          { size: 37, stock: 8 },
-          { size: 38, stock: 5 },
-          { size: 39, stock: 0 },
-        ],
-      },
-      {
-        name: 'New Balance 574 Core',
-        description: 'El clásico indiscutido de New Balance. Versatilidad, confort y materiales de primera calidad.',
-        price: 115000,
-        brandId: brandMap.get('New Balance'),
-        typeId: typeMap.get('Zapatilla Urbana'),
-        gender: 'Hombre',
-        active: true,
-        images: [
-          {
-            url: 'https://images.unsplash.com/photo-1539185441755-769473a23570?auto=format&fit=crop&w=800&q=80',
-            isPrincipal: true,
-            position: 1,
-          },
-        ],
-        sizesStock: [
-          { size: 39, stock: 6 },
-          { size: 40, stock: 12 },
-          { size: 41, stock: 15 },
-          { size: 42, stock: 8 },
-          { size: 43, stock: 5 },
-        ],
-      },
-      {
-        name: 'Adidas Adilette Comfort',
-        description: 'Ojota liviana con plantilla contorneada para máximo descanso tras el deporte o en la pileta.',
-        price: 35000,
-        brandId: brandMap.get('Adidas'),
-        typeId: typeMap.get('Ojota'),
-        gender: 'Unisex',
-        active: true,
-        images: [
-          {
-            url: 'https://images.unsplash.com/photo-1603808033192-082d6919d3e1?auto=format&fit=crop&w=800&q=80',
-            isPrincipal: true,
-            position: 1,
-          },
-        ],
-        sizesStock: [
-          { size: 37, stock: 10 },
-          { size: 38, stock: 15 },
-          { size: 39, stock: 20 },
-          { size: 40, stock: 15 },
-          { size: 41, stock: 8 },
-        ],
-      },
-      {
-        name: 'Reebok Nano X3',
-        description: 'Zapatilla de entrenamiento cruzado diseñada para levantamiento, cardio y entrenamientos funcionales.',
-        price: 130000,
-        brandId: brandMap.get('Reebok'),
-        typeId: typeMap.get('Zapatilla Deportiva'),
-        gender: 'Hombre',
-        active: true,
-        images: [
-          {
-            url: 'https://images.unsplash.com/photo-1582588678413-dbf45f4823e9?auto=format&fit=crop&w=800&q=80',
-            isPrincipal: true,
-            position: 1,
-          },
-        ],
-        sizesStock: [
-          { size: 40, stock: 8 },
-          { size: 41, stock: 10 },
-          { size: 42, stock: 5 },
-          { size: 43, stock: 3 },
-        ],
-      },
-      {
-        name: 'Nike Star Runner 3',
-        description: 'Zapatilla infantil liviana con tracción flexible para jugar sin parar todo el día.',
-        price: 58000,
-        brandId: brandMap.get('Nike'),
-        typeId: typeMap.get('Zapatilla Running'),
-        gender: 'Niño',
-        active: true,
-        images: [
-          {
-            url: 'https://images.unsplash.com/photo-1514989940723-e8e51635b782?auto=format&fit=crop&w=800&q=80',
-            isPrincipal: true,
-            position: 1,
-          },
-        ],
-        sizesStock: [
-          { size: 26, stock: 4 },
-          { size: 27, stock: 6 },
-          { size: 28, stock: 8 },
-          { size: 29, stock: 10 },
-          { size: 30, stock: 5 },
-          { size: 31, stock: 0 },
-        ],
-      },
-    ];
+    // 5. Crear Configuración General Inicial
+    await Settings.create({
+      storeName: 'FP Zapatillas',
+      storePhone: '+5491100000000',
+      storeEmail: 'contacto@fpzapatillas.com',
+      businessHours: 'Lun a Sáb: 9:00 a 20:00 hs',
+      whatsappInquiryMessage: 'Hola! Tengo una consulta sobre un calzado',
+      instagramUrl: '',
+      facebookUrl: '',
+      bankAlias: 'FP.ZAPATILLAS',
+      bankCbu: '0000003100010000000000',
+      bankHolder: 'FP Calzados',
+      bankCuit: '20-00000000-9',
+      bankName: 'Banco Galicia',
+      minStockAlert: 3,
+      wholesaleMinPairs: 5,
+      shippingInfo: 'Envíos a todo el país en 24/48hs',
+    });
+    console.log('   ✓ Ajustes de la tienda inicializados');
 
-    await Product.insertMany(productsData);
-
-    console.log('🎉 Seeding completado con éxito:');
-    console.log(` - ${createdBrands.length} Marcas creadas.`);
-    console.log(` - ${createdTypes.length} Tipos de Calzado creados.`);
-    console.log(` - ${promotionsData.length} Promociones creadas.`);
-    console.log(` - ${productsData.length} Productos con stock cargados.`);
-
-    await mongoose.disconnect();
-    console.log('👋 Desconectado de MongoDB.');
-    process.exit(0);
+    console.log('\n====================================================');
+    console.log('🎉 BASE DE DATOS RESETEADA Y LISTA PARA PRODUCCIÓN');
+    console.log('====================================================');
+    console.log('📊 Resumen del estado actual:');
+    console.log('   - Marcas:          ', createdBrands.length);
+    console.log('   - Tipos:            ', createdTypes.length);
+    console.log('   - Escalas Talles:   4 géneros');
+    console.log('   - Productos:        0 (listo para carga admin/CSV)');
+    console.log('   - Promociones:      0 (listo para carga de banners)');
+    console.log('   - Pedidos:          0');
+    console.log('   - Ventas (Kardex):  0');
+    console.log('   - Gastos / Caja:    0');
+    console.log('====================================================\n');
   } catch (error) {
-    console.error('❌ Error durante el seeding:', error);
+    console.error('❌ Error durante la ejecución del seed:', error);
     process.exit(1);
+  } finally {
+    await mongoose.connection.close();
+    console.log('🔌 Conexión cerrada.');
   }
 }
 

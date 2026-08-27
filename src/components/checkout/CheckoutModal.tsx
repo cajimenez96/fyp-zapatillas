@@ -13,7 +13,7 @@ interface CheckoutModalProps {
 }
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose }) => {
-  const { items, subtotal, clearCart } = useCart();
+  const { items, subtotal, clearCart, getEffectivePrice } = useCart();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [customerData, setCustomerData] = useState<CustomerFormData>({
@@ -81,13 +81,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({ isOpen, onClose })
     setCreatedOrder(null);
   };
 
-  const formattedItemsForStep3 = items.map((item) => ({
-    name: item.name,
-    size: item.size,
-    qty: item.qty,
-    price: item.retailPrice,
-    subtotal: item.retailPrice * item.qty,
-  }));
+  const formattedItemsForStep3 = items.map((item) => {
+    const effectivePrice = getEffectivePrice(item);
+    return {
+      name: item.name,
+      size: item.size,
+      qty: item.qty,
+      price: effectivePrice,
+      subtotal: effectivePrice * item.qty,
+    };
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">

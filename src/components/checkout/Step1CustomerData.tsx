@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { User, Phone, ArrowRight, ShieldCheck } from 'lucide-react';
+import React, { useState } from "react";
+import { User, Phone, ArrowRight, ShieldCheck } from "lucide-react";
 
 export interface CustomerFormData {
   name: string;
@@ -19,21 +19,25 @@ export const Step1CustomerData: React.FC<Step1CustomerDataProps> = ({
   onSubmit,
 }) => {
   const [formData, setFormData] = useState<CustomerFormData>(initialData);
-  const [errors, setErrors] = useState<{ name?: string; lastName?: string; phone?: string }>({});
+  const [errors, setErrors] = useState<{
+    name?: string;
+    lastName?: string;
+    phone?: string;
+  }>({});
 
   const validate = () => {
     const errs: { name?: string; lastName?: string; phone?: string } = {};
 
     if (!formData.name.trim()) {
-      errs.name = 'El nombre es obligatorio';
+      errs.name = "El nombre es obligatorio";
     }
     if (!formData.lastName.trim()) {
-      errs.lastName = 'El apellido es obligatorio';
+      errs.lastName = "El apellido es obligatorio";
     }
     if (!formData.phone.trim()) {
-      errs.phone = 'El teléfono de WhatsApp es obligatorio';
+      errs.phone = "El teléfono de WhatsApp es obligatorio";
     } else if (formData.phone.trim().length < 6) {
-      errs.phone = 'Ingresá un número de teléfono válido';
+      errs.phone = "Ingresá un número de teléfono válido";
     }
 
     setErrors(errs);
@@ -54,7 +58,8 @@ export const Step1CustomerData: React.FC<Step1CustomerDataProps> = ({
           Tus Datos de Contacto
         </h3>
         <p className="text-xs text-[#707072]">
-          Ingresá tus datos para enviarte la confirmación del pedido por WhatsApp.
+          Ingresá tus datos para enviarte la confirmación del pedido por
+          WhatsApp.
         </p>
       </div>
 
@@ -68,17 +73,20 @@ export const Step1CustomerData: React.FC<Step1CustomerDataProps> = ({
             <div className="relative">
               <input
                 type="text"
-                placeholder="Ej: Carlos"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 className={`w-full bg-[#f5f5f5] text-[#111111] text-sm font-medium py-3 pl-10 pr-4 rounded-none border focus:outline-none focus:ring-2 focus:ring-[#111111] ${
-                  errors.name ? 'border-[#d30005]' : 'border-[#e5e5e5]'
+                  errors.name ? "border-[#d30005]" : "border-[#e5e5e5]"
                 }`}
               />
               <User className="w-4 h-4 text-[#707072] absolute left-3.5 top-1/2 -translate-y-1/2" />
             </div>
             {errors.name && (
-              <p className="text-[11px] text-[#d30005] font-semibold mt-1">{errors.name}</p>
+              <p className="text-[11px] text-[#d30005] font-semibold mt-1">
+                {errors.name}
+              </p>
             )}
           </div>
 
@@ -89,17 +97,20 @@ export const Step1CustomerData: React.FC<Step1CustomerDataProps> = ({
             <div className="relative">
               <input
                 type="text"
-                placeholder="Ej: Jiménez"
                 value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, lastName: e.target.value })
+                }
                 className={`w-full bg-[#f5f5f5] text-[#111111] text-sm font-medium py-3 pl-10 pr-4 rounded-none border focus:outline-none focus:ring-2 focus:ring-[#111111] ${
-                  errors.lastName ? 'border-[#d30005]' : 'border-[#e5e5e5]'
+                  errors.lastName ? "border-[#d30005]" : "border-[#e5e5e5]"
                 }`}
               />
               <User className="w-4 h-4 text-[#707072] absolute left-3.5 top-1/2 -translate-y-1/2" />
             </div>
             {errors.lastName && (
-              <p className="text-[11px] text-[#d30005] font-semibold mt-1">{errors.lastName}</p>
+              <p className="text-[11px] text-[#d30005] font-semibold mt-1">
+                {errors.lastName}
+              </p>
             )}
           </div>
         </div>
@@ -112,20 +123,25 @@ export const Step1CustomerData: React.FC<Step1CustomerDataProps> = ({
           <div className="relative">
             <input
               type="tel"
-              placeholder="Ej: 3815218630 (sin 0 ni 15)"
+              placeholder="sin 0 ni 15"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
               className={`w-full bg-[#f5f5f5] text-[#111111] text-sm font-medium py-3 pl-10 pr-4 rounded-none border focus:outline-none focus:ring-2 focus:ring-[#111111] ${
-                errors.phone ? 'border-[#d30005]' : 'border-[#e5e5e5]'
+                errors.phone ? "border-[#d30005]" : "border-[#e5e5e5]"
               }`}
             />
             <Phone className="w-4 h-4 text-[#707072] absolute left-3.5 top-1/2 -translate-y-1/2" />
           </div>
           {errors.phone ? (
-            <p className="text-[11px] text-[#d30005] font-semibold mt-1">{errors.phone}</p>
+            <p className="text-[11px] text-[#d30005] font-semibold mt-1">
+              {errors.phone}
+            </p>
           ) : (
             <p className="text-[11px] text-[#707072] mt-1">
-              Te servirá para enviar la orden y el comprobante directo por WhatsApp.
+              Te servirá para enviar la orden y el comprobante directo por
+              WhatsApp.
             </p>
           )}
         </div>
@@ -134,7 +150,9 @@ export const Step1CustomerData: React.FC<Step1CustomerDataProps> = ({
       {/* Security Callout */}
       <div className="p-3 bg-[#f5f5f5] border border-[#e5e5e5] flex items-center gap-3 text-xs text-[#707072]">
         <ShieldCheck className="w-5 h-5 text-[#007d48] flex-shrink-0" />
-        <span>Tus datos están protegidos. No requiere registro ni contraseña.</span>
+        <span>
+          Tus datos están protegidos. No requiere registro ni contraseña.
+        </span>
       </div>
 
       {/* Action Button */}

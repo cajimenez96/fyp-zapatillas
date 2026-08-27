@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Image from 'next/image';
-import { Eye, AlertCircle, Tag } from 'lucide-react';
-import type { IProductImage, ISizeStock } from '@/models/Product';
+import React from "react";
+import Image from "next/image";
+import { Eye, AlertCircle, Tag } from "lucide-react";
+import type { IProductImage, ISizeStock } from "@/models/Product";
 
-import { formatPrice } from '@/utils/formatCurrency';
+import { formatPrice } from "@/utils/formatCurrency";
 
 export interface FormattedProduct {
   _id: string;
@@ -34,14 +34,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onSelectProduct,
 }) => {
   const brandName =
-    typeof product.brandId === 'object' && product.brandId !== null
+    typeof product.brandId === "object" && product.brandId !== null
       ? product.brandId.name
-      : 'Calzado';
+      : "Calzado";
 
   const typeName =
-    typeof product.typeId === 'object' && product.typeId !== null
+    typeof product.typeId === "object" && product.typeId !== null
       ? product.typeId.name
-      : '';
+      : "";
 
   // Resolve prices with legacy fallback
   const retailPrice = product.retailPrice ?? product.price ?? 0;
@@ -52,7 +52,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const primaryImage =
     product.images.find((img) => img.isPrincipal)?.url ||
     product.images[0]?.url ||
-    'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80';
+    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80";
 
   const availableSizes = product.sizesStock
     .filter((s) => s.stock > 0)
@@ -71,7 +71,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className={`object-cover object-center transition-transform duration-500 group-hover:scale-105 ${
-            product.isOutOfStock ? 'grayscale opacity-60' : ''
+            product.isOutOfStock ? "grayscale opacity-60" : ""
           }`}
         />
 
@@ -82,16 +82,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <AlertCircle className="w-3 h-3 text-[#d30005]" /> SIN STOCK
             </span>
           ) : (
-            <span className="bg-white/90 text-[#111111] text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full backdrop-blur-sm border border-[#e5e5e5] shadow-xs">
-              {product.gender}
-            </span>
+            product.gender === "Niño" && (
+              <span className="bg-white/90 text-[#111111] text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full backdrop-blur-sm border border-[#e5e5e5] shadow-xs">
+                {product.gender}
+              </span>
+            )
           )}
           {/* Wholesale badge */}
-          {hasWholesaleDiscount && !product.isOutOfStock && (
+          {/* {hasWholesaleDiscount && !product.isOutOfStock && (
             <span className="inline-flex items-center gap-1 bg-[#007d48] text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
               <Tag className="w-3 h-3" /> Precio Mayorista
             </span>
-          )}
+          )} */}
         </div>
 
         {/* Hover Quick Action Overlay */}

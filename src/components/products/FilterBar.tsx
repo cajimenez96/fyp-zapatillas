@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { SlidersHorizontal, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { SlidersHorizontal, RotateCcw, X, Check } from "lucide-react";
 
 interface FilterOption {
   _id: string;
   name: string;
 }
 
-export type ProductSort = 'price_asc' | 'price_desc' | null;
+export type ProductSort = "price_asc" | "price_desc" | null;
 
 interface FilterBarProps {
   brands: FilterOption[];
@@ -41,11 +41,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   onSelectSort,
   onClearFilters,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [availableSizes, setAvailableSizes] = useState<number[]>([]);
   const [availableGenders, setAvailableGenders] = useState<string[]>([]);
 
-  const genders = ['Hombre', 'Mujer', 'Niño', 'Unisex'];
+  const genders = ["Hombre", "Mujer", "Niño", "Unisex"];
 
   // Fetch available filters dynamically based on selected filters
   useEffect(() => {
@@ -53,13 +53,13 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       try {
         const params = new URLSearchParams();
         if (selectedBrandIds.length > 0) {
-          params.append('brandId', selectedBrandIds.join(','));
+          params.append("brandId", selectedBrandIds.join(","));
         }
         if (selectedTypeIds.length > 0) {
-          params.append('typeId', selectedTypeIds.join(','));
+          params.append("typeId", selectedTypeIds.join(","));
         }
         if (selectedGender) {
-          params.append('gender', selectedGender);
+          params.append("gender", selectedGender);
         }
 
         const res = await fetch(`/api/catalog/available-filters?${params}`);
@@ -70,179 +70,242 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           setAvailableGenders(json.data.genders || []);
         }
       } catch (err) {
-        console.error('Error fetching available filters:', err);
+        console.error("Error fetching available filters:", err);
       }
     };
 
     fetchAvailableFilters();
   }, [selectedBrandIds, selectedTypeIds, selectedGender]);
 
-  const hasActiveFilters =
-    selectedBrandIds.length > 0 ||
-    selectedTypeIds.length > 0 ||
-    selectedSize !== null ||
-    selectedGender !== null;
+  const activeFiltersCount =
+    selectedBrandIds.length +
+    selectedTypeIds.length +
+    (selectedSize !== null ? 1 : 0) +
+    (selectedGender !== null ? 1 : 0);
+
+  const hasActiveFilters = activeFiltersCount > 0;
 
   return (
-    <div className="bg-[#f5f5f5] p-4 sm:p-6 border border-[#e5e5e5] mb-6 font-sans">
-      {/* Header Row */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal className="w-4 h-4 text-[#111111]" />
-          <h3 className="font-extrabold text-sm uppercase tracking-wider text-[#111111]">
-            Filtros del Catálogo
-          </h3>
-          {hasActiveFilters && (
-            <span className="bg-[#111111] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-              Activos
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-3">
-          <select
-            value={selectedSort ?? ''}
-            onChange={(e) =>
-              onSelectSort(
-                e.target.value === '' ? null : (e.target.value as ProductSort),
-              )
-            }
-            className="text-xs font-bold text-[#111111] bg-white px-3 py-1.5 rounded-full border border-[#e5e5e5] hover:border-[#111111] transition-all cursor-pointer shadow-xs focus:outline-none"
-          >
-            <option value="">Relevancia</option>
-            <option value="price_asc">Menor precio</option>
-            <option value="price_desc">Mayor precio</option>
-          </select>
-
-          {hasActiveFilters && (
+    <>
+      <div className="bg-[#f5f5f5] p-3.5 sm:p-4 border border-[#e5e5e5] mb-6 font-sans">
+        {/* Header Row */}
+        <div className="flex justify-between items-center gap-2">
+          {/* Left: Button "Más filtros" / "Filtros" */}
+          <div className="flex items-center gap-2">
             <button
-              onClick={onClearFilters}
-              className="text-xs text-[#d30005] font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+              onClick={() => setIsOpen(true)}
+              className="text-xs font-bold text-[#111111] flex items-center gap-2 bg-white px-3.5 py-2 rounded-full border border-[#e5e5e5] hover:border-[#111111] transition-all cursor-pointer shadow-xs"
             >
-              <RotateCcw className="w-3 h-3" /> Limpiar Filtros
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#111111]" />
+              <span>Más filtros</span>
+              {hasActiveFilters && (
+                <span className="bg-[#111111] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {activeFiltersCount}
+                </span>
+              )}
             </button>
-          )}
 
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="text-xs text-[#111111] font-bold flex items-center gap-1 bg-white px-3 py-1.5 rounded-full border border-[#e5e5e5] hover:border-[#111111] transition-all cursor-pointer shadow-xs"
-          >
-            <span>{isExpanded ? 'Minimizar Filtros' : 'Ampliar Filtros'}</span>
-            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          </button>
+            {hasActiveFilters && (
+              <button
+                onClick={onClearFilters}
+                className="text-xs text-[#d30005] font-semibold hover:underline flex items-center gap-1 cursor-pointer ml-1"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span className="hidden sm:inline">Limpiar</span>
+              </button>
+            )}
+          </div>
+
+          {/* Right: Sort Select */}
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedSort ?? ""}
+              onChange={(e) =>
+                onSelectSort(
+                  e.target.value === "" ? null : (e.target.value as ProductSort),
+                )
+              }
+              className="text-xs font-bold text-[#111111] bg-white px-3 py-2 rounded-full border border-[#e5e5e5] hover:border-[#111111] transition-all cursor-pointer shadow-xs focus:outline-none"
+            >
+              <option value="">Relevancia</option>
+              <option value="price_asc">Menor precio</option>
+              <option value="price_desc">Mayor precio</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* Filter Options (Collapsible on both web and mobile) */}
-      {isExpanded && (
-        <div className="space-y-5 mt-4 pt-4 border-t border-[#e5e5e5] animate-in fade-in duration-200">
-          {/* 1. Marcas Filter Chips */}
-          {brands.length > 0 && (
-            <div>
-              <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2">
-                Marca
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {brands.map((brand) => {
-                  const isActive = selectedBrandIds.includes(brand._id);
-                  return (
-                    <button
-                      key={brand._id}
-                      onClick={() => onToggleBrand(brand._id)}
-                      className={`transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-[#111111] text-white font-bold rounded-full px-3.5 py-1.5 text-xs shadow-xs'
-                          : 'bg-white text-[#111111] font-semibold border border-[#e5e5e5] hover:border-[#111111] rounded-full px-3.5 py-1.5 text-xs'
-                      }`}
-                    >
-                      {brand.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+      {/* Off-canvas Filter Drawer (Slide from left to right) */}
+      <div
+        className={`fixed inset-0 z-50 overflow-hidden font-sans transition-all duration-300 ${
+          isOpen ? "pointer-events-auto visible" : "pointer-events-none invisible"
+        }`}
+      >
+        {/* Backdrop with smooth fade */}
+        <div
+          className={`fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300 ease-out ${
+            isOpen ? "opacity-100" : "opacity-0"
+          }`}
+          onClick={() => setIsOpen(false)}
+        />
 
-          {/* 2. Tipos de Calzado Filter Chips */}
-          {types.length > 0 && (
-            <div>
-              <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2">
-                Tipo de Calzado
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {types.map((type) => {
-                  const isActive = selectedTypeIds.includes(type._id);
-                  return (
-                    <button
-                      key={type._id}
-                      onClick={() => onToggleType(type._id)}
-                      className={`transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-[#111111] text-white font-bold rounded-full px-3.5 py-1.5 text-xs shadow-xs'
-                          : 'bg-white text-[#111111] font-semibold border border-[#e5e5e5] hover:border-[#111111] rounded-full px-3.5 py-1.5 text-xs'
-                      }`}
-                    >
-                      {type.name}
-                    </button>
-                  );
-                })}
+        <div className="fixed inset-y-0 left-0 max-w-full flex pr-10">
+          <div
+            className={`w-screen max-w-md bg-white border-r border-[#e5e5e5] shadow-2xl flex flex-col justify-between transition-transform duration-300 ease-out transform ${
+              isOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+          >
+            {/* Drawer Header */}
+            <div className="p-6 border-b border-[#e5e5e5] flex justify-between items-center bg-white">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="w-5 h-5 text-[#111111]" />
+                <h2 className="text-lg font-extrabold uppercase tracking-tight text-[#111111]">
+                  Filtros {hasActiveFilters && `(${activeFiltersCount})`}
+                </h2>
               </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-2 rounded-full hover:bg-[#f5f5f5] text-[#111111] transition-colors cursor-pointer"
+                aria-label="Cerrar filtros"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-          )}
 
-          {/* 3. Género Filter */}
-          <div>
-            <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2">
-              Género
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {genders.map((gender) => {
-                const isActive = selectedGender === gender;
-                return (
+              {/* Drawer Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* 1. Marcas Filter Chips */}
+                {brands.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2.5">
+                      Marca
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {brands.map((brand) => {
+                        const isActive = selectedBrandIds.includes(brand._id);
+                        return (
+                          <button
+                            key={brand._id}
+                            onClick={() => onToggleBrand(brand._id)}
+                            className={`transition-all cursor-pointer ${
+                              isActive
+                                ? "bg-[#111111] text-white font-bold rounded-full px-3.5 py-1.5 text-xs shadow-xs"
+                                : "bg-white text-[#111111] font-semibold border border-[#e5e5e5] hover:border-[#111111] rounded-full px-3.5 py-1.5 text-xs"
+                            }`}
+                          >
+                            {brand.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Tipos de Calzado Filter Chips */}
+                {types.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2.5">
+                      Tipo de Calzado
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {types.map((type) => {
+                        const isActive = selectedTypeIds.includes(type._id);
+                        return (
+                          <button
+                            key={type._id}
+                            onClick={() => onToggleType(type._id)}
+                            className={`transition-all cursor-pointer ${
+                              isActive
+                                ? "bg-[#111111] text-white font-bold rounded-full px-3.5 py-1.5 text-xs shadow-xs"
+                                : "bg-white text-[#111111] font-semibold border border-[#e5e5e5] hover:border-[#111111] rounded-full px-3.5 py-1.5 text-xs"
+                            }`}
+                          >
+                            {type.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Género Filter */}
+                <div>
+                  <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2.5">
+                    Género
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {genders.map((gender) => {
+                      const isActive = selectedGender === gender;
+                      return (
+                        <button
+                          key={gender}
+                          onClick={() =>
+                            onSelectGender(isActive ? null : gender)
+                          }
+                          className={`transition-all cursor-pointer ${
+                            isActive
+                              ? "bg-[#111111] text-white font-bold rounded-full px-3.5 py-1.5 text-xs shadow-xs"
+                              : "bg-white text-[#111111] font-semibold border border-[#e5e5e5] hover:border-[#111111] rounded-full px-3.5 py-1.5 text-xs"
+                          }`}
+                        >
+                          {gender}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 4. Talles Grid Selector */}
+                {availableSizes.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2.5">
+                      Talles Disponibles
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {availableSizes.map((size) => {
+                        const isActive = selectedSize === size;
+                        return (
+                          <button
+                            key={size}
+                            onClick={() => onSelectSize(isActive ? null : size)}
+                            className={`w-10 h-10 text-xs font-bold rounded-full transition-all flex items-center justify-center cursor-pointer ${
+                              isActive
+                                ? "bg-[#111111] text-white shadow-xs"
+                                : "bg-white text-[#111111] border border-[#e5e5e5] hover:border-[#111111]"
+                            }`}
+                          >
+                            {size}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Drawer Footer Actions */}
+              <div className="p-6 border-t border-[#e5e5e5] bg-[#f5f5f5] space-y-3">
+                {hasActiveFilters && (
                   <button
-                    key={gender}
-                    onClick={() => onSelectGender(isActive ? null : gender)}
-                    className={`transition-all cursor-pointer ${
-                      isActive
-                        ? 'bg-[#111111] text-white font-bold rounded-full px-3.5 py-1.5 text-xs shadow-xs'
-                        : 'bg-white text-[#111111] font-semibold border border-[#e5e5e5] hover:border-[#111111] rounded-full px-3.5 py-1.5 text-xs'
-                    }`}
+                    onClick={onClearFilters}
+                    className="w-full py-3 bg-white hover:bg-[#eaeaea] text-[#d30005] border border-[#e5e5e5] font-bold text-xs uppercase tracking-wider rounded-full flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
-                    {gender}
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Limpiar Filtros
                   </button>
-                );
-              })}
+                )}
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="w-full py-3.5 bg-[#111111] hover:bg-black text-white font-bold text-xs uppercase tracking-wider rounded-full flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md cursor-pointer"
+                >
+                  <Check className="w-4 h-4" />
+                  Ver Resultados
+                </button>
+              </div>
             </div>
           </div>
-
-          {/* 4. Talles Grid Selector */}
-          {availableSizes.length > 0 && (
-            <div>
-              <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2">
-                Talle Disponibles
-              </h4>
-              <div className="flex flex-wrap gap-1.5">
-                {availableSizes.map((size) => {
-                  const isActive = selectedSize === size;
-                  return (
-                    <button
-                      key={size}
-                      onClick={() => onSelectSize(isActive ? null : size)}
-                      className={`w-9 h-9 text-xs font-bold rounded-full transition-all flex items-center justify-center cursor-pointer ${
-                        isActive
-                          ? 'bg-[#111111] text-white shadow-xs'
-                          : 'bg-white text-[#111111] border border-[#e5e5e5] hover:border-[#111111]'
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
-      )}
-    </div>
+    </>
   );
 };
+

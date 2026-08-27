@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef } from 'react';
-import { ProductCard, FormattedProduct } from './ProductCard';
-import { PackageX } from 'lucide-react';
+import React, { useEffect, useRef } from "react";
+import { ProductCard, FormattedProduct } from "./ProductCard";
+import { PackageX } from "lucide-react";
 
 interface ProductGridProps {
   products: FormattedProduct[];
@@ -37,7 +37,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
           onLoadMoreRef.current?.();
         }
       },
-      { rootMargin: '400px' },
+      { rootMargin: "400px" },
     );
 
     const sentinel = sentinelRef.current;
@@ -70,7 +70,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
           No se encontraron productos
         </h3>
         <p className="text-sm text-[#707072] max-w-md mx-auto mt-1">
-          Intenta ajustar los filtros de búsqueda o reiniciar la selección para ver más modelos disponibles.
+          Intenta ajustar los filtros de búsqueda o reiniciar la selección para
+          ver más modelos disponibles.
         </p>
       </div>
     );

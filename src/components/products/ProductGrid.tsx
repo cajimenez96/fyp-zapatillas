@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ProductCard, FormattedProduct } from './ProductCard';
 import { PackageX } from 'lucide-react';
 
@@ -8,13 +8,45 @@ interface ProductGridProps {
   products: FormattedProduct[];
   loading?: boolean;
   onSelectProduct: (product: FormattedProduct) => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({
   products,
   loading = false,
   onSelectProduct,
+  hasMore = false,
+  loadingMore = false,
+  onLoadMore,
 }) => {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const onLoadMoreRef = useRef(onLoadMore);
+
+  useEffect(() => {
+    onLoadMoreRef.current = onLoadMore;
+  }, [onLoadMore]);
+
+  useEffect(() => {
+    if (!hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          onLoadMoreRef.current?.();
+        }
+      },
+      { rootMargin: '400px' },
+    );
+
+    const sentinel = sentinelRef.current;
+    if (sentinel) observer.observe(sentinel);
+
+    return () => {
+      if (sentinel) observer.unobserve(sentinel);
+    };
+  }, [hasMore]);
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 my-6">
@@ -45,14 +77,26 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10 my-6">
-      {products.map((product) => (
-        <ProductCard
-          key={product._id}
-          product={product}
-          onSelectProduct={onSelectProduct}
-        />
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10 my-6">
+        {products.map((product) => (
+          <ProductCard
+            key={product._id}
+            product={product}
+            onSelectProduct={onSelectProduct}
+          />
+        ))}
+      </div>
+
+      {hasMore && (
+        <div ref={sentinelRef} className="py-6 text-center">
+          {loadingMore && (
+            <span className="text-xs text-[#707072]">
+              Cargando más productos...
+            </span>
+          )}
+        </div>
+      )}
+    </>
   );
 };

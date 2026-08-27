@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     const size = searchParams.get('size');
     const gender = searchParams.get('gender');
     const search = searchParams.get('search');
-    const random = searchParams.get('random') === 'true';
+    const sort = searchParams.get('sort');
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
@@ -64,33 +64,24 @@ export async function GET(req: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let products: any[];
-    let total = 0;
+    // _id as tiebreaker keeps skip/limit pagination stable across pages
+    // when many products share the same sort value.
+    const sortQuery: Record<string, 1 | -1> =
+      sort === 'price_asc'
+        ? { retailPrice: 1, _id: 1 }
+        : sort === 'price_desc'
+          ? { retailPrice: -1, _id: 1 }
+          : { createdAt: -1, _id: 1 };
 
-    if (random) {
-      // Random sample mode for landing page
-      const aggregatePipeline = [
-        { $match: query },
-        { $sample: { size: limit } },
-      ];
-      const rawProducts = await Product.aggregate(aggregatePipeline);
-      products = await Product.populate(rawProducts, [
-        { path: 'brandId', select: 'name' },
-        { path: 'typeId', select: 'name' },
-      ]);
-      total = await Product.countDocuments(query);
-    } else {
-      // Standard paginated query sorted by newest
-      total = await Product.countDocuments(query);
-      products = await Product.find(query)
-        .populate('brandId', 'name')
-        .populate('typeId', 'name')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean();
-    }
+    const total = await Product.countDocuments(query);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const products: any[] = await Product.find(query)
+      .populate('brandId', 'name')
+      .populate('typeId', 'name')
+      .sort(sortQuery)
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
     // Map products to include totalStock and isOutOfStock flags
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

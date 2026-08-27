@@ -44,3 +44,6 @@ next-env.d.ts
 .atl
 .qodo
 
+# Playwright MCP test artifacts
+.playwright-mcp/
+

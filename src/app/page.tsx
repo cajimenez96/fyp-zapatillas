@@ -9,11 +9,13 @@ import {
   ProductDetailModal,
   FormattedProduct,
   CartItemAddPayload,
+  ProductSort,
 } from "@/components/products";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { CheckoutModal } from "@/components/checkout";
 import { useCart } from "@/context/CartContext";
 import { IPromotion } from "@/models/Promotion";
+import { apiClient } from "@/lib/api-client";
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -26,6 +28,9 @@ function HomeContent() {
   const [types, setTypes] = useState<{ _id: string; name: string }[]>([]);
 
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [selectedProduct, setSelectedProduct] =
     useState<FormattedProduct | null>(null);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -37,6 +42,7 @@ function HomeContent() {
   const [selectedGender, setSelectedGender] = useState<string | null>(
     genderQueryParam,
   );
+  const [selectedSort, setSelectedSort] = useState<ProductSort>(null);
 
   const { addToCart } = useCart();
 
@@ -44,12 +50,13 @@ function HomeContent() {
     setSelectedGender(genderQueryParam);
   }, [genderQueryParam]);
 
+  const PAGE_SIZE = 12;
+
   // 1. Fetch Promotions
   useEffect(() => {
     async function fetchPromotions() {
       try {
-        const res = await fetch("/api/promotions");
-        const json = await res.json();
+        const { data: json } = await apiClient.get("/api/promotions");
         if (json.ok) {
           setPromotions(json.data);
         }
@@ -65,15 +72,12 @@ function HomeContent() {
     async function fetchFilterData() {
       try {
         const [brandsRes, typesRes] = await Promise.all([
-          fetch("/api/brands"),
-          fetch("/api/types"),
+          apiClient.get("/api/brands"),
+          apiClient.get("/api/types"),
         ]);
 
-        const brandsJson = await brandsRes.json();
-        const typesJson = await typesRes.json();
-
-        if (brandsJson.ok) setBrands(brandsJson.data);
-        if (typesJson.ok) setTypes(typesJson.data);
+        if (brandsRes.data.ok) setBrands(brandsRes.data.data);
+        if (typesRes.data.ok) setTypes(typesRes.data.data);
       } catch (err) {
         console.error("Error al cargar opciones de filtro:", err);
       }
@@ -82,9 +86,8 @@ function HomeContent() {
   }, []);
 
   // 3. Fetch Products with Filters
-  const fetchProducts = useCallback(async () => {
-    setLoadingProducts(true);
-    try {
+  const buildProductParams = useCallback(
+    (targetPage: number) => {
       const params = new URLSearchParams();
 
       if (searchQueryParam.trim()) {
@@ -102,40 +105,66 @@ function HomeContent() {
       if (selectedGender !== null) {
         params.append("gender", selectedGender);
       }
-
-      // If no filters or search active, fetch random sample for landing
-      const isFiltered =
-        searchQueryParam.trim().length > 0 ||
-        selectedBrandIds.length > 0 ||
-        selectedTypeIds.length > 0 ||
-        selectedSize !== null ||
-        selectedGender !== null;
-
-      if (!isFiltered) {
-        params.append("random", "true");
-        params.append("limit", "12");
-      } else {
-        params.append("limit", "50");
+      if (selectedSort) {
+        params.append("sort", selectedSort);
       }
+      params.append("page", targetPage.toString());
+      params.append("limit", PAGE_SIZE.toString());
 
-      const res = await fetch(`/api/products?${params.toString()}`);
-      const json = await res.json();
+      return params;
+    },
+    [
+      searchQueryParam,
+      selectedBrandIds,
+      selectedTypeIds,
+      selectedSize,
+      selectedGender,
+      selectedSort,
+    ],
+  );
+
+  const fetchProducts = useCallback(async () => {
+    setLoadingProducts(true);
+    try {
+      const params = buildProductParams(1);
+      const { data: json } = await apiClient.get(
+        `/api/products?${params.toString()}`,
+      );
 
       if (json.ok) {
         setProducts(json.data);
+        setPage(1);
+        setHasMore(json.pagination.page < json.pagination.totalPages);
       }
     } catch (err) {
       console.error("Error al cargar catálogo:", err);
     } finally {
       setLoadingProducts(false);
     }
-  }, [
-    searchQueryParam,
-    selectedBrandIds,
-    selectedTypeIds,
-    selectedSize,
-    selectedGender,
-  ]);
+  }, [buildProductParams]);
+
+  const fetchMoreProducts = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const params = buildProductParams(nextPage);
+      const { data: json } = await apiClient.get(
+        `/api/products?${params.toString()}`,
+      );
+
+      if (json.ok) {
+        setProducts((prev) => [...prev, ...json.data]);
+        setPage(nextPage);
+        setHasMore(json.pagination.page < json.pagination.totalPages);
+      }
+    } catch (err) {
+      console.error("Error al cargar más productos:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [buildProductParams, page, loadingMore, hasMore]);
 
   useEffect(() => {
     fetchProducts();
@@ -163,6 +192,7 @@ function HomeContent() {
     setSelectedTypeIds([]);
     setSelectedSize(null);
     setSelectedGender(null);
+    setSelectedSort(null);
   };
 
   const handleAddToCart = (payload: CartItemAddPayload) => {
@@ -191,9 +221,9 @@ function HomeContent() {
                 : "Descubrí nuestro stock disponible. Elegí tu talle y hacé tu pedido directo por WhatsApp."}
             </p>
           </div>
-          <span className="text-xs font-bold text-[#111111] bg-[#f5f5f5] px-3 py-1 rounded-full border border-[#e5e5e5]">
+          {/* <span className="text-xs font-bold text-[#111111] bg-[#f5f5f5] px-3 py-1 rounded-full border border-[#e5e5e5]">
             {products.length} modelos mostrados
-          </span>
+          </span> */}
         </div>
 
         {/* Filter Bar */}
@@ -204,10 +234,12 @@ function HomeContent() {
           selectedTypeIds={selectedTypeIds}
           selectedSize={selectedSize}
           selectedGender={selectedGender}
+          selectedSort={selectedSort}
           onToggleBrand={handleToggleBrand}
           onToggleType={handleToggleType}
           onSelectSize={setSelectedSize}
           onSelectGender={setSelectedGender}
+          onSelectSort={setSelectedSort}
           onClearFilters={handleClearFilters}
         />
 
@@ -216,6 +248,9 @@ function HomeContent() {
           products={products}
           loading={loadingProducts}
           onSelectProduct={(product) => setSelectedProduct(product)}
+          hasMore={hasMore}
+          loadingMore={loadingMore}
+          onLoadMore={fetchMoreProducts}
         />
       </section>
 

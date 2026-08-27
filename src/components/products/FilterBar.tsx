@@ -8,6 +8,8 @@ interface FilterOption {
   name: string;
 }
 
+export type ProductSort = 'price_asc' | 'price_desc' | null;
+
 interface FilterBarProps {
   brands: FilterOption[];
   types: FilterOption[];
@@ -15,10 +17,12 @@ interface FilterBarProps {
   selectedTypeIds: string[];
   selectedSize: number | null;
   selectedGender: string | null;
+  selectedSort: ProductSort;
   onToggleBrand: (brandId: string) => void;
   onToggleType: (typeId: string) => void;
   onSelectSize: (size: number | null) => void;
   onSelectGender: (gender: string | null) => void;
+  onSelectSort: (sort: ProductSort) => void;
   onClearFilters: () => void;
 }
 
@@ -29,10 +33,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   selectedTypeIds,
   selectedSize,
   selectedGender,
+  selectedSort,
   onToggleBrand,
   onToggleType,
   onSelectSize,
   onSelectGender,
+  onSelectSort,
   onClearFilters,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -94,6 +100,20 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
+          <select
+            value={selectedSort ?? ''}
+            onChange={(e) =>
+              onSelectSort(
+                e.target.value === '' ? null : (e.target.value as ProductSort),
+              )
+            }
+            className="text-xs font-bold text-[#111111] bg-white px-3 py-1.5 rounded-full border border-[#e5e5e5] hover:border-[#111111] transition-all cursor-pointer shadow-xs focus:outline-none"
+          >
+            <option value="">Relevancia</option>
+            <option value="price_asc">Menor precio</option>
+            <option value="price_desc">Mayor precio</option>
+          </select>
+
           {hasActiveFilters && (
             <button
               onClick={onClearFilters}

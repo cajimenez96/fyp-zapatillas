@@ -108,7 +108,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       <div className="pt-3 pb-2 flex flex-col gap-1">
         <div className="flex justify-between items-center text-xs text-[#707072] font-semibold uppercase tracking-wider">
           <span>{brandName}</span>
-          {typeName && <span>• {typeName}</span>}
+          <span className="hidden md:block">{typeName || ""}</span>
         </div>
 
         <h3 className="font-bold text-base text-[#111111] group-hover:underline line-clamp-1 leading-snug">
@@ -116,7 +116,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </h3>
 
         {/* Available Sizes Pills Preview */}
-        <div className="flex items-center gap-1 my-1 overflow-x-auto no-scrollbar py-0.5">
+        <div className="hidden md:flex items-center gap-1 my-1 overflow-x-auto no-scrollbar py-0.5">
           {availableSizes.length > 0 ? (
             availableSizes.slice(0, 5).map((size) => (
               <span
@@ -149,7 +149,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
         {hasWholesaleDiscount && (
           <p className="text-[10px] text-[#707072] font-medium mt-0.5">
-            ✦ Precio mayorista al llevar 5 pares o más
+            ✦ Precio mayorista 5 pares o más
           </p>
         )}
       </div>

@@ -49,7 +49,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   }, [hasMore]);
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 my-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-2 md:gap-x-6 gap-y-10 my-6">
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="animate-pulse space-y-3">
             <div className="bg-[#f5f5f5] aspect-square w-full rounded-none" />
@@ -79,7 +79,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10 my-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-2 md:gap-x-6 gap-y-10 my-6">
         {products.map((product) => (
           <ProductCard
             key={product._id}

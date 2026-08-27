@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { SlidersHorizontal, RotateCcw, X, Check } from "lucide-react";
+import { SlidersHorizontal, RotateCcw, X, Check, ChevronDown } from "lucide-react";
 
 interface FilterOption {
   _id: string;
@@ -117,20 +117,32 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           </div>
 
           {/* Right: Sort Select */}
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedSort ?? ""}
-              onChange={(e) =>
-                onSelectSort(
-                  e.target.value === "" ? null : (e.target.value as ProductSort),
-                )
-              }
-              className="text-xs font-bold text-[#111111] bg-white px-3 py-2 rounded-full border border-[#e5e5e5] hover:border-[#111111] transition-all cursor-pointer shadow-xs focus:outline-none"
+          <div className="relative flex items-center">
+            <label
+              htmlFor="product-sort"
+              className="text-xs font-semibold text-[#707072] mr-2 hidden sm:inline select-none"
             >
-              <option value="">Relevancia</option>
-              <option value="price_asc">Menor precio</option>
-              <option value="price_desc">Mayor precio</option>
-            </select>
+              Ordenar por:
+            </label>
+            <div className="relative inline-flex items-center">
+              <select
+                id="product-sort"
+                value={selectedSort ?? ""}
+                onChange={(e) =>
+                  onSelectSort(
+                    e.target.value === ""
+                      ? null
+                      : (e.target.value as ProductSort),
+                  )
+                }
+                className="text-xs font-bold text-[#111111] bg-white pl-3.5 pr-8 py-2 rounded-full border border-[#e5e5e5] hover:border-[#111111] transition-all cursor-pointer shadow-xs focus:outline-none appearance-none"
+              >
+                <option value="">Relevancia</option>
+                <option value="price_asc">Menor precio</option>
+                <option value="price_desc">Mayor precio</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-[#111111] pointer-events-none absolute right-3" />
+            </div>
           </div>
         </div>
       </div>
@@ -138,7 +150,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       {/* Off-canvas Filter Drawer (Slide from left to right) */}
       <div
         className={`fixed inset-0 z-50 overflow-hidden font-sans transition-all duration-300 ${
-          isOpen ? "pointer-events-auto visible" : "pointer-events-none invisible"
+          isOpen
+            ? "pointer-events-auto visible"
+            : "pointer-events-none invisible"
         }`}
       >
         {/* Backdrop with smooth fade */}
@@ -172,140 +186,137 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               </button>
             </div>
 
-              {/* Drawer Content */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {/* 1. Marcas Filter Chips */}
-                {brands.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2.5">
-                      Marca
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {brands.map((brand) => {
-                        const isActive = selectedBrandIds.includes(brand._id);
-                        return (
-                          <button
-                            key={brand._id}
-                            onClick={() => onToggleBrand(brand._id)}
-                            className={`transition-all cursor-pointer ${
-                              isActive
-                                ? "bg-[#111111] text-white font-bold rounded-full px-3.5 py-1.5 text-xs shadow-xs"
-                                : "bg-white text-[#111111] font-semibold border border-[#e5e5e5] hover:border-[#111111] rounded-full px-3.5 py-1.5 text-xs"
-                            }`}
-                          >
-                            {brand.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* 2. Tipos de Calzado Filter Chips */}
-                {types.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2.5">
-                      Tipo de Calzado
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {types.map((type) => {
-                        const isActive = selectedTypeIds.includes(type._id);
-                        return (
-                          <button
-                            key={type._id}
-                            onClick={() => onToggleType(type._id)}
-                            className={`transition-all cursor-pointer ${
-                              isActive
-                                ? "bg-[#111111] text-white font-bold rounded-full px-3.5 py-1.5 text-xs shadow-xs"
-                                : "bg-white text-[#111111] font-semibold border border-[#e5e5e5] hover:border-[#111111] rounded-full px-3.5 py-1.5 text-xs"
-                            }`}
-                          >
-                            {type.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* 3. Género Filter */}
+            {/* Drawer Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* 1. Marcas Filter Chips */}
+              {brands.length > 0 && (
                 <div>
                   <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2.5">
-                    Género
+                    Marca
                   </h4>
                   <div className="flex flex-wrap gap-2">
-                    {genders.map((gender) => {
-                      const isActive = selectedGender === gender;
+                    {brands.map((brand) => {
+                      const isActive = selectedBrandIds.includes(brand._id);
                       return (
                         <button
-                          key={gender}
-                          onClick={() =>
-                            onSelectGender(isActive ? null : gender)
-                          }
+                          key={brand._id}
+                          onClick={() => onToggleBrand(brand._id)}
                           className={`transition-all cursor-pointer ${
                             isActive
                               ? "bg-[#111111] text-white font-bold rounded-full px-3.5 py-1.5 text-xs shadow-xs"
                               : "bg-white text-[#111111] font-semibold border border-[#e5e5e5] hover:border-[#111111] rounded-full px-3.5 py-1.5 text-xs"
                           }`}
                         >
-                          {gender}
+                          {brand.name}
                         </button>
                       );
                     })}
                   </div>
                 </div>
+              )}
 
-                {/* 4. Talles Grid Selector */}
-                {availableSizes.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2.5">
-                      Talles Disponibles
-                    </h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {availableSizes.map((size) => {
-                        const isActive = selectedSize === size;
-                        return (
-                          <button
-                            key={size}
-                            onClick={() => onSelectSize(isActive ? null : size)}
-                            className={`w-10 h-10 text-xs font-bold rounded-full transition-all flex items-center justify-center cursor-pointer ${
-                              isActive
-                                ? "bg-[#111111] text-white shadow-xs"
-                                : "bg-white text-[#111111] border border-[#e5e5e5] hover:border-[#111111]"
-                            }`}
-                          >
-                            {size}
-                          </button>
-                        );
-                      })}
-                    </div>
+              {/* 2. Tipos de Calzado Filter Chips */}
+              {types.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2.5">
+                    Tipo de Calzado
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {types.map((type) => {
+                      const isActive = selectedTypeIds.includes(type._id);
+                      return (
+                        <button
+                          key={type._id}
+                          onClick={() => onToggleType(type._id)}
+                          className={`transition-all cursor-pointer ${
+                            isActive
+                              ? "bg-[#111111] text-white font-bold rounded-full px-3.5 py-1.5 text-xs shadow-xs"
+                              : "bg-white text-[#111111] font-semibold border border-[#e5e5e5] hover:border-[#111111] rounded-full px-3.5 py-1.5 text-xs"
+                          }`}
+                        >
+                          {type.name}
+                        </button>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
+              )}
+
+              {/* 3. Género Filter */}
+              <div>
+                <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2.5">
+                  Género
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {genders.map((gender) => {
+                    const isActive = selectedGender === gender;
+                    return (
+                      <button
+                        key={gender}
+                        onClick={() => onSelectGender(isActive ? null : gender)}
+                        className={`transition-all cursor-pointer ${
+                          isActive
+                            ? "bg-[#111111] text-white font-bold rounded-full px-3.5 py-1.5 text-xs shadow-xs"
+                            : "bg-white text-[#111111] font-semibold border border-[#e5e5e5] hover:border-[#111111] rounded-full px-3.5 py-1.5 text-xs"
+                        }`}
+                      >
+                        {gender}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Drawer Footer Actions */}
-              <div className="p-6 border-t border-[#e5e5e5] bg-[#f5f5f5] space-y-3">
-                {hasActiveFilters && (
-                  <button
-                    onClick={onClearFilters}
-                    className="w-full py-3 bg-white hover:bg-[#eaeaea] text-[#d30005] border border-[#e5e5e5] font-bold text-xs uppercase tracking-wider rounded-full flex items-center justify-center gap-2 transition-all cursor-pointer"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    Limpiar Filtros
-                  </button>
-                )}
+              {/* 4. Talles Grid Selector */}
+              {availableSizes.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2.5">
+                    Talles Disponibles
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {availableSizes.map((size) => {
+                      const isActive = selectedSize === size;
+                      return (
+                        <button
+                          key={size}
+                          onClick={() => onSelectSize(isActive ? null : size)}
+                          className={`w-10 h-10 text-xs font-bold rounded-full transition-all flex items-center justify-center cursor-pointer ${
+                            isActive
+                              ? "bg-[#111111] text-white shadow-xs"
+                              : "bg-white text-[#111111] border border-[#e5e5e5] hover:border-[#111111]"
+                          }`}
+                        >
+                          {size}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Drawer Footer Actions */}
+            <div className="p-6 border-t border-[#e5e5e5] bg-[#f5f5f5] space-y-3">
+              {hasActiveFilters && (
                 <button
-                  onClick={() => setIsOpen(false)}
-                  className="w-full py-3.5 bg-[#111111] hover:bg-black text-white font-bold text-xs uppercase tracking-wider rounded-full flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md cursor-pointer"
+                  onClick={onClearFilters}
+                  className="w-full py-3 bg-white hover:bg-[#eaeaea] text-[#d30005] border border-[#e5e5e5] font-bold text-xs uppercase tracking-wider rounded-full flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
-                  <Check className="w-4 h-4" />
-                  Ver Resultados
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Limpiar Filtros
                 </button>
-              </div>
+              )}
+              <button
+                onClick={() => setIsOpen(false)}
+                className="w-full py-3.5 bg-[#111111] hover:bg-black text-white font-bold text-xs uppercase tracking-wider rounded-full flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md cursor-pointer"
+              >
+                <Check className="w-4 h-4" />
+                Ver Resultados
+              </button>
             </div>
           </div>
         </div>
+      </div>
     </>
   );
 };
-

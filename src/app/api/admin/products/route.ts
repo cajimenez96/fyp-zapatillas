@@ -219,6 +219,7 @@ export async function DELETE(req: NextRequest) {
     await connectToDatabase();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
+    const permanent = searchParams.get('permanent') === 'true';
 
     if (!id) {
       return NextResponse.json(
@@ -227,24 +228,52 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Soft delete: deactivate product to maintain sales history
-    const updated = await Product.findByIdAndUpdate(id, { active: false }, { new: true });
-
-    if (!updated) {
+    const product = await Product.findById(id);
+    if (!product) {
       return NextResponse.json(
         { ok: false, error: 'NOT_FOUND', message: 'Producto no encontrado' },
         { status: 404 }
       );
     }
 
+    if (permanent) {
+      // Check if product is in any existing orders
+      const orderCount = await (await import('@/models/Order')).default.countDocuments({
+        'items.productId': id,
+      });
+
+      if (orderCount > 0) {
+        // Deactivate instead to preserve historical records
+        await Product.findByIdAndUpdate(id, { active: false });
+        return NextResponse.json({
+          ok: true,
+          mode: 'deactivated',
+          message: `El producto tiene ${orderCount} venta(s)/pedido(s) registrado(s). Se desactivó del catálogo para preservar el historial.`,
+        });
+      }
+
+      // Hard delete if never sold/ordered
+      await Product.findByIdAndDelete(id);
+      return NextResponse.json({
+        ok: true,
+        mode: 'deleted',
+        message: 'Producto eliminado permanentemente de la base de datos.',
+      });
+    }
+
+    // Standard toggle / soft delete
+    const updated = await Product.findByIdAndUpdate(id, { active: false }, { returnDocument: 'after' });
+
     return NextResponse.json({
       ok: true,
-      message: 'Producto desactivado correctamente',
+      mode: 'deactivated',
+      message: 'Producto desactivado del catálogo.',
+      data: updated,
     });
   } catch (error) {
     console.error('Error al eliminar producto:', error);
     return NextResponse.json(
-      { ok: false, error: 'INTERNAL_SERVER_ERROR', message: 'Error al desactivar el producto' },
+      { ok: false, error: 'INTERNAL_SERVER_ERROR', message: 'Error al procesar la eliminación del producto' },
       { status: 500 }
     );
   }

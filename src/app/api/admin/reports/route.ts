@@ -28,7 +28,11 @@ export async function GET() {
     for (const order of orders) {
       totalOrders++;
 
-      if (order.status === 'completada') {
+      const isCompleted = order.status === 'completada' || order.status === 'autorizado';
+      const isPending = order.status === 'pendiente';
+      const isCancelled = order.status === 'cancelada' || order.status === 'cancelado';
+
+      if (isCompleted) {
         completedOrders++;
         totalRevenue += order.total;
 
@@ -50,10 +54,10 @@ export async function GET() {
           current.totalAmount += item.subtotal;
           productSalesMap.set(key, current);
         }
-      } else if (order.status === 'pendiente') {
+      } else if (isPending) {
         pendingOrders++;
         pendingRevenue += order.total;
-      } else if (order.status === 'cancelada') {
+      } else if (isCancelled) {
         cancelledOrders++;
       }
     }

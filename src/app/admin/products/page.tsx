@@ -12,6 +12,9 @@ import {
   Upload,
   Eye,
   EyeOff,
+  Trash2,
+  AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 
 import { formatPrice } from '@/utils/formatCurrency';
@@ -39,6 +42,10 @@ export default function AdminProductsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGender, setSelectedGender] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+
+  // Delete modal state
+  const [productToDelete, setProductToDelete] = useState<AdminProductItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -91,6 +98,33 @@ export default function AdminProductsPage() {
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error al cambiar estado');
+    }
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!productToDelete) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/products?id=${productToDelete._id}&permanent=true`, {
+        method: 'DELETE',
+      });
+      const json = await res.json();
+
+      if (json.ok) {
+        if (json.mode === 'deleted') {
+          toast.success('Producto eliminado permanentemente');
+        } else {
+          toast.info(json.message || 'Producto desactivado');
+        }
+        setProductToDelete(null);
+        fetchProducts();
+      } else {
+        throw new Error(json.message || 'No se pudo eliminar el producto');
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al eliminar producto');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -290,6 +324,14 @@ export default function AdminProductsPage() {
                             >
                               <Edit2 className="w-4 h-4" />
                             </Link>
+
+                            <button
+                              onClick={() => setProductToDelete(prod)}
+                              className="p-1.5 bg-[#f5f5f5] text-[#707072] hover:bg-[#d30005] hover:text-white transition-colors cursor-pointer"
+                              title="Eliminar producto"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -301,6 +343,53 @@ export default function AdminProductsPage() {
           )}
         </div>
       </main>
+
+      {/* Confirmation Modal for Product Deletion */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white border border-[#e5e5e5] p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-[#d30005]">
+              <div className="p-2 bg-[#d30005]/10 rounded-full">
+                <AlertTriangle className="w-6 h-6 text-[#d30005]" />
+              </div>
+              <h3 className="text-base font-extrabold uppercase tracking-tight text-[#111111]">
+                ¿Eliminar Producto?
+              </h3>
+            </div>
+
+            <div className="space-y-2 text-xs text-[#707072]">
+              <p>
+                Estás a punto de eliminar{' '}
+                <strong className="text-[#111111] font-bold">{productToDelete.name}</strong>.
+              </p>
+              <p>
+                Si este producto no tiene ventas registradas, se eliminará permanentemente de la base de datos.
+                Si ya cuenta con historial de pedidos, se desactivará automáticamente para preservar los reportes.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setProductToDelete(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-bold text-[#111111] bg-[#f5f5f5] hover:bg-[#e5e5e5] transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteProduct}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-bold text-white bg-[#d30005] hover:bg-[#b00004] transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {isDeleting ? 'Eliminando...' : 'Sí, Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -45,7 +45,7 @@ export const AdminNav: React.FC = () => {
 
   return (
     <header className="bg-[#111111] text-white border-b border-[#39393b] sticky top-0 z-40">
-      <div className="max-w-8xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-evenly gap-4">
+      <div className="max-w-8xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-4">
         {/* Brand Lockup */}
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/10 rounded-full text-white">

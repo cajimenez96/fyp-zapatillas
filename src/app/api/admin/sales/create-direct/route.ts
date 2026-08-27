@@ -12,20 +12,44 @@ const WHOLESALE_THRESHOLD = 5;
  * Creates a direct sale from the admin POS panel.
  * - Saved directly as 'autorizado' with origin 'admin_direct'
  * - Immediately decrements stock (real unified inventory)
+ * - Supports both Replica Set (production with transactions) and Standalone (local dev)
  */
 export async function POST(req: NextRequest) {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  await connectToDatabase();
+
+  let session: mongoose.ClientSession | null = null;
+  let useTransaction = false;
+
+  const client = mongoose.connection?.getClient() as any;
+  const topologyType = client?.topology?.description?.type;
+  const isReplicaSet = typeof topologyType === 'string' && topologyType.includes('ReplicaSet');
+
+  if (isReplicaSet) {
+    try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+      useTransaction = true;
+    } catch {
+      if (session) {
+        await session.endSession().catch(() => {});
+      }
+      session = null;
+      useTransaction = false;
+    }
+  }
+
+  const decrementedItems: Array<{ productId: any; size: number; qty: number }> = [];
 
   try {
-    await connectToDatabase();
     const body = await req.json();
     const { guest, items, paymentMethod, discountNote, discount } = body;
 
     // 1. Validate guest data
     if (!guest || !guest.name || !guest.lastName || !guest.phone) {
-      await session.abortTransaction();
-      session.endSession();
+      if (session && useTransaction) {
+        await session.abortTransaction();
+        session.endSession();
+      }
       return NextResponse.json(
         { ok: false, error: 'BAD_REQUEST', message: 'Los datos del cliente son obligatorios.' },
         { status: 400 }
@@ -33,8 +57,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (!items || !Array.isArray(items) || items.length === 0) {
-      await session.abortTransaction();
-      session.endSession();
+      if (session && useTransaction) {
+        await session.abortTransaction();
+        session.endSession();
+      }
       return NextResponse.json(
         { ok: false, error: 'BAD_REQUEST', message: 'La venta debe incluir al menos un producto.' },
         { status: 400 }
@@ -52,10 +78,16 @@ export async function POST(req: NextRequest) {
     let calculatedSubtotal = 0;
 
     for (const item of items) {
-      const product = await Product.findById(item.productId).session(session);
+      const productQuery = Product.findById(item.productId);
+      const product = session && useTransaction
+        ? await productQuery.session(session)
+        : await productQuery;
+
       if (!product || !product.active) {
-        await session.abortTransaction();
-        session.endSession();
+        if (session && useTransaction) {
+          await session.abortTransaction();
+          session.endSession();
+        }
         return NextResponse.json(
           {
             ok: false,
@@ -72,8 +104,10 @@ export async function POST(req: NextRequest) {
       const itemQty = Math.max(1, Number(item.qty));
 
       if (availableStock < itemQty) {
-        await session.abortTransaction();
-        session.endSession();
+        if (session && useTransaction) {
+          await session.abortTransaction();
+          session.endSession();
+        }
         return NextResponse.json(
           {
             ok: false,
@@ -115,16 +149,27 @@ export async function POST(req: NextRequest) {
 
     // 4. Atomically decrement stock for all items
     for (const item of validatedItems) {
-      await Product.updateOne(
-        { _id: item.productId, 'sizesStock.size': item.size },
-        { $inc: { 'sizesStock.$.stock': -item.qty } },
-        { session }
-      );
+      if (session && useTransaction) {
+        await Product.updateOne(
+          { _id: item.productId, 'sizesStock.size': item.size },
+          { $inc: { 'sizesStock.$.stock': -item.qty } },
+          { session }
+        );
+      } else {
+        await Product.updateOne(
+          { _id: item.productId, 'sizesStock.size': item.size },
+          { $inc: { 'sizesStock.$.stock': -item.qty } }
+        );
+      }
+      decrementedItems.push({ productId: item.productId, size: item.size, qty: item.qty });
     }
 
     // 5. Generate order number
     const currentYear = new Date().getFullYear();
-    const count = await Order.countDocuments().session(session);
+    const countQuery = Order.countDocuments();
+    const count = session && useTransaction
+      ? await countQuery.session(session)
+      : await countQuery;
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const orderNumber = `PED-${currentYear}-${(count + 1).toString().padStart(4, '0')}${randomSuffix.toString().slice(-2)}`;
 
@@ -132,47 +177,47 @@ export async function POST(req: NextRequest) {
     const total = Math.max(0, calculatedSubtotal - appliedDiscount);
 
     // 6. Create order directly as 'autorizado'
-    const [newOrder] = await Order.create(
-      [
-        {
-          orderNumber,
-          origin: 'admin_direct',
-          guest: {
-            name: guest.name.trim(),
-            lastName: guest.lastName.trim(),
-            phone: guest.phone.trim(),
-          },
-          items: validatedItems,
-          subtotal: calculatedSubtotal,
-          discount: appliedDiscount,
-          total,
-          paymentMethod: ['transferencia', 'efectivo', 'tarjeta', 'otro'].includes(paymentMethod)
-            ? paymentMethod
-            : 'efectivo',
-          status: 'autorizado',
-          notes: discountNote ? discountNote.trim() : '',
-        },
-      ],
-      { session }
-    );
+    const orderPayload = {
+      orderNumber,
+      origin: 'admin_direct' as const,
+      guest: {
+        name: guest.name.trim(),
+        lastName: guest.lastName.trim(),
+        phone: guest.phone.trim(),
+      },
+      items: validatedItems,
+      subtotal: calculatedSubtotal,
+      discount: appliedDiscount,
+      total,
+      paymentMethod: ['transferencia', 'efectivo', 'tarjeta', 'otro'].includes(paymentMethod)
+        ? paymentMethod
+        : 'efectivo',
+      status: 'autorizado' as const,
+      notes: discountNote ? discountNote.trim() : '',
+    };
+
+    const newOrder = session && useTransaction
+      ? (await Order.create([orderPayload], { session }))[0]
+      : await Order.create(orderPayload);
 
     // 7. Create SalesRecord immediately
-    const [salesRecord] = await SalesRecord.create(
-      [
-        {
-          orderId: newOrder._id,
-          orderNumber: newOrder.orderNumber,
-          confirmationDate: new Date(),
-          recordedPaymentMethod: newOrder.paymentMethod,
-          appliedDiscountNote: discountNote ?? '',
-          finalTotal: total,
-        },
-      ],
-      { session }
-    );
+    const salesRecordPayload = {
+      orderId: newOrder._id,
+      orderNumber: newOrder.orderNumber,
+      confirmationDate: new Date(),
+      recordedPaymentMethod: newOrder.paymentMethod,
+      appliedDiscountNote: discountNote ?? '',
+      finalTotal: total,
+    };
 
-    await session.commitTransaction();
-    session.endSession();
+    const salesRecord = session && useTransaction
+      ? (await SalesRecord.create([salesRecordPayload], { session }))[0]
+      : await SalesRecord.create(salesRecordPayload);
+
+    if (session && useTransaction) {
+      await session.commitTransaction();
+      session.endSession();
+    }
 
     return NextResponse.json(
       {
@@ -185,12 +230,23 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+  } catch (error: any) {
+    if (session && useTransaction) {
+      await session.abortTransaction();
+      session.endSession();
+    } else if (decrementedItems.length > 0) {
+      // Manual rollback in non-replica set environment
+      for (const item of decrementedItems) {
+        await Product.updateOne(
+          { _id: item.productId, 'sizesStock.size': item.size },
+          { $inc: { 'sizesStock.$.stock': item.qty } }
+        ).catch(() => {});
+      }
+    }
+
     console.error('Error al registrar venta directa:', error);
     return NextResponse.json(
-      { ok: false, error: 'INTERNAL_SERVER_ERROR', message: 'Error al registrar la venta directa.' },
+      { ok: false, error: 'INTERNAL_SERVER_ERROR', message: error?.message || 'Error al registrar la venta directa.' },
       { status: 500 }
     );
   }

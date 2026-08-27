@@ -47,3 +47,7 @@ next-env.d.ts
 # Playwright MCP test artifacts
 .playwright-mcp/
 
+# Claude
+.claude
+AGENTS.md
+CLAUDE.md

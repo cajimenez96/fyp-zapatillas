@@ -21,15 +21,15 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
     const { title, description, imageUrl, active, order } = await req.json();
 
-    if (!title || !title.trim() || !imageUrl || !imageUrl.trim()) {
+    if (!imageUrl || !imageUrl.trim()) {
       return NextResponse.json(
-        { ok: false, error: 'BAD_REQUEST', message: 'Título e imagen son obligatorios' },
+        { ok: false, error: 'BAD_REQUEST', message: 'La imagen es obligatoria' },
         { status: 400 }
       );
     }
 
     const newPromotion = await Promotion.create({
-      title: title.trim(),
+      title: title ? title.trim() : '',
       description: description ? description.trim() : '',
       imageUrl: imageUrl.trim(),
       active: active !== undefined ? Boolean(active) : true,
@@ -68,7 +68,7 @@ export async function PUT(req: NextRequest) {
     if (order !== undefined) updateData.order = Number(order);
 
     const updated = await Promotion.findByIdAndUpdate(promoId, updateData, {
-      returnDocument: 'after',
+      new: true,
       runValidators: true,
     });
 
@@ -80,10 +80,14 @@ export async function PUT(req: NextRequest) {
     }
 
     return NextResponse.json({ ok: true, data: updated });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al editar promoción:', error);
     return NextResponse.json(
-      { ok: false, error: 'INTERNAL_SERVER_ERROR', message: 'Error al actualizar la promoción' },
+      { 
+        ok: false, 
+        error: 'INTERNAL_SERVER_ERROR', 
+        message: error?.message || 'Error al actualizar la promoción' 
+      },
       { status: 500 }
     );
   }

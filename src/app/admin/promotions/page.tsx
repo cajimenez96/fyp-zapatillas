@@ -18,7 +18,7 @@ import { toast } from '@/components/ui/sonner';
 
 interface PromotionItem {
   _id: string;
-  title: string;
+  title?: string;
   description?: string;
   imageUrl: string;
   active: boolean;
@@ -61,8 +61,8 @@ export default function AdminPromotionsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const primaryImg = bannerImages[0]?.url || '';
-    if (!title.trim() || !primaryImg.trim()) {
-      toast.error('Título e imagen son obligatorios');
+    if (!primaryImg.trim()) {
+      toast.error('La imagen del banner es obligatoria');
       return;
     }
 
@@ -72,8 +72,8 @@ export default function AdminPromotionsPage() {
       const url = '/api/admin/promotions';
       const method = editingId ? 'PUT' : 'POST';
       const body = editingId
-        ? { id: editingId, title, description, imageUrl: primaryImg, active, order }
-        : { title, description, imageUrl: primaryImg, active, order };
+        ? { id: editingId, title: title.trim(), description: description.trim(), imageUrl: primaryImg, active, order }
+        : { title: title.trim(), description: description.trim(), imageUrl: primaryImg, active, order };
 
       const res = await fetch(url, {
         method,
@@ -112,7 +112,7 @@ export default function AdminPromotionsPage() {
 
   const handleEdit = (promo: PromotionItem) => {
     setEditingId(promo._id);
-    setTitle(promo.title);
+    setTitle(promo.title || '');
     setDescription(promo.description || '');
     setBannerImages([{ url: promo.imageUrl, isPrincipal: true, position: 1 }]);
     setOrder(promo.order || 1);
@@ -140,7 +140,8 @@ export default function AdminPromotionsPage() {
   };
 
   const handleDelete = async (promo: PromotionItem) => {
-    if (!confirm(`¿Estás seguro de eliminar el banner "${promo.title}"?`)) return;
+    const promoName = promo.title ? `"${promo.title}"` : `Orden #${promo.order}`;
+    if (!confirm(`¿Estás seguro de eliminar el banner ${promoName}?`)) return;
 
     try {
       const res = await fetch(`/api/admin/promotions?id=${promo._id}`, {
@@ -187,7 +188,7 @@ export default function AdminPromotionsPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-extrabold uppercase tracking-wider text-[#111111] mb-1.5">
-                  Título del Anuncio *
+                  Título del Anuncio (Opcional)
                 </label>
                 <input
                   type="text"
@@ -251,7 +252,7 @@ export default function AdminPromotionsPage() {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  disabled={saving || !title.trim() || bannerImages.length === 0}
+                  disabled={saving || bannerImages.length === 0}
                   className="flex-1 py-3 bg-[#111111] hover:bg-black text-white font-bold text-xs uppercase tracking-wider rounded-full flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                 >
                   {saving ? (
@@ -303,7 +304,7 @@ export default function AdminPromotionsPage() {
                     <div className="relative w-full sm:w-32 h-20 bg-white flex-shrink-0 border border-[#e5e5e5]">
                       <Image
                         src={promo.imageUrl}
-                        alt={promo.title}
+                        alt={promo.title || `Banner ${promo.order}`}
                         fill
                         sizes="128px"
                         className="object-cover object-center"
@@ -327,7 +328,7 @@ export default function AdminPromotionsPage() {
                         )}
                       </div>
                       <h4 className="font-extrabold text-sm text-[#111111] truncate">
-                        {promo.title}
+                        {promo.title || <span className="text-[#707072] italic font-normal">(Sin título de texto)</span>}
                       </h4>
                       {promo.description && (
                         <p className="text-xs text-[#707072] line-clamp-1">

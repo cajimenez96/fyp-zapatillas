@@ -56,6 +56,7 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({
   }
 
   const currentPromo = promotions[currentIndex];
+  const hasText = Boolean(currentPromo.title?.trim() || currentPromo.description?.trim());
 
   return (
     <div
@@ -67,38 +68,35 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({
       <div className="relative h-[320px] sm:h-[420px] md:h-[480px] w-full flex items-center">
         <Image
           src={currentPromo.imageUrl}
-          alt={currentPromo.title}
+          alt={currentPromo.title || "Banner promocional"}
           fill
           priority
           sizes="100vw"
-          className="object-cover object-center opacity-70 transition-opacity duration-700"
+          className={`object-cover object-center ${
+            hasText ? "opacity-70" : "opacity-100"
+          } transition-opacity duration-700`}
         />
 
-        {/* Gradient Overlay for Typography Contrast */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+        {/* Gradient Overlay only if text is present */}
+        {hasText && (
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+        )}
 
         {/* Content Container */}
-        <div className="relative max-w-7xl mx-auto px-6 sm:px-12 w-full z-10 space-y-4">
-          {/* <span className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-bold uppercase tracking-wider">
-            Novedades & Promociones
-          </span> */}
-          <h2 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white uppercase max-w-2xl leading-[0.95]">
-            {currentPromo.title}
-          </h2>
-          {currentPromo.description && (
-            <p className="text-sm sm:text-base text-gray-200 max-w-lg line-clamp-2">
-              {currentPromo.description}
-            </p>
-          )}
-          {/* <div>
-            <a
-              href="#catalogo"
-              className="inline-flex items-center gap-2 bg-white text-[#111111] font-bold text-sm px-6 py-3 rounded-full hover:bg-gray-100 transition-all active:scale-95 shadow-lg"
-            >
-              Ver Catálogo
-            </a>
-          </div> */}
-        </div>
+        {hasText && (
+          <div className="relative max-w-7xl mx-auto px-6 sm:px-12 w-full z-10 space-y-4">
+            {currentPromo.title && (
+              <h2 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white uppercase max-w-2xl leading-[0.95]">
+                {currentPromo.title}
+              </h2>
+            )}
+            {currentPromo.description && (
+              <p className="text-sm sm:text-base text-gray-200 max-w-lg line-clamp-2">
+                {currentPromo.description}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Prev / Next Controls */}

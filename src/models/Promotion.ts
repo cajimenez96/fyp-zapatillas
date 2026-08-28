@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IPromotion {
-  title: string;
+  title?: string;
   description?: string;
   imageUrl: string;
   active: boolean;
@@ -18,8 +18,8 @@ const PromotionSchema: Schema<IPromotionDocument> = new Schema(
   {
     title: {
       type: String,
-      required: [true, 'El título de la promoción es obligatorio'],
       trim: true,
+      default: '',
     },
     description: {
       type: String,

@@ -1,15 +1,17 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
-import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
-import type { IPromotion } from '@/models/Promotion';
+import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
+import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import type { IPromotion } from "@/models/Promotion";
 
 interface PromoCarouselProps {
   promotions?: IPromotion[];
 }
 
-export const PromoCarousel: React.FC<PromoCarouselProps> = ({ promotions = [] }) => {
+export const PromoCarousel: React.FC<PromoCarouselProps> = ({
+  promotions = [],
+}) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -21,7 +23,7 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ promotions = [] })
   const prevSlide = () => {
     if (promotions.length === 0) return;
     setCurrentIndex((prevIndex) =>
-      prevIndex === 0 ? promotions.length - 1 : prevIndex - 1
+      prevIndex === 0 ? promotions.length - 1 : prevIndex - 1,
     );
   };
 
@@ -38,13 +40,15 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ promotions = [] })
       <div className="w-full bg-[#111111] text-white py-12 px-6 text-center my-4 rounded-none">
         <div className="max-w-2xl mx-auto space-y-3">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold uppercase tracking-wider text-white">
-            <Sparkles className="w-3.5 h-3.5 text-[#007d48]" /> FP Zapatillas 2026
+            <Sparkles className="w-3.5 h-3.5 text-[#007d48]" /> FP Zapatillas
+            2026
           </span>
           <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight uppercase">
             Catálogo Oficial de Calzado
           </h2>
           <p className="text-sm text-[#cacacb]">
-            Elegí tus modelos favoritos, consultá stock en tiempo real y gestioná tu compra por WhatsApp.
+            Elegí tus modelos favoritos, consultá stock en tiempo real y
+            gestioná tu compra por WhatsApp.
           </p>
         </div>
       </div>
@@ -75,9 +79,9 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ promotions = [] })
 
         {/* Content Container */}
         <div className="relative max-w-7xl mx-auto px-6 sm:px-12 w-full z-10 space-y-4">
-          <span className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-bold uppercase tracking-wider">
+          {/* <span className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-bold uppercase tracking-wider">
             Novedades & Promociones
-          </span>
+          </span> */}
           <h2 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white uppercase max-w-2xl leading-[0.95]">
             {currentPromo.title}
           </h2>
@@ -86,14 +90,14 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ promotions = [] })
               {currentPromo.description}
             </p>
           )}
-          <div>
+          {/* <div>
             <a
               href="#catalogo"
               className="inline-flex items-center gap-2 bg-white text-[#111111] font-bold text-sm px-6 py-3 rounded-full hover:bg-gray-100 transition-all active:scale-95 shadow-lg"
             >
               Ver Catálogo
             </a>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -127,8 +131,8 @@ export const PromoCarousel: React.FC<PromoCarouselProps> = ({ promotions = [] })
               aria-label={`Ir al banner ${index + 1}`}
               className={`h-2.5 rounded-full transition-all ${
                 currentIndex === index
-                  ? 'w-8 bg-white'
-                  : 'w-2.5 bg-white/50 hover:bg-white/80'
+                  ? "w-8 bg-white"
+                  : "w-2.5 bg-white/50 hover:bg-white/80"
               }`}
             />
           ))}

@@ -12,8 +12,11 @@ export async function GET(req: NextRequest) {
 
     const status = searchParams.get('status');
     const search = searchParams.get('search');
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '50', 10);
+    const pageParam = searchParams.get('page');
+    const limitParam = searchParams.get('limit');
+    const page = pageParam ? Math.max(1, parseInt(pageParam, 10)) : 1;
+    const hasPagination = Boolean(limitParam !== null && parseInt(limitParam, 10) > 0);
+    const limit = hasPagination ? parseInt(limitParam!, 10) : 0;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const query: Record<string, any> = {};
@@ -32,23 +35,24 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    const skip = (page - 1) * limit;
     const total = await Order.countDocuments(query);
+    let orderQuery = Order.find(query).sort({ createdAt: -1 });
 
-    const orders = await Order.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    if (hasPagination) {
+      const skip = (page - 1) * limit;
+      orderQuery = orderQuery.skip(skip).limit(limit);
+    }
+
+    const orders = await orderQuery.lean();
 
     return NextResponse.json({
       ok: true,
       data: orders,
       pagination: {
         page,
-        limit,
+        limit: hasPagination ? limit : total,
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: hasPagination && limit > 0 ? Math.ceil(total / limit) : 1,
       },
     });
   } catch (error) {

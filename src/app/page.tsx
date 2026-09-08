@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { PromoCarousel } from "@/components/home/PromoCarousel";
 import {
@@ -30,6 +30,7 @@ function HomeContent() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
+  const pageRef = useRef(1);
   const [hasMore, setHasMore] = useState(false);
   const [selectedProduct, setSelectedProduct] =
     useState<FormattedProduct | null>(null);
@@ -50,7 +51,7 @@ function HomeContent() {
     setSelectedGender(genderQueryParam);
   }, [genderQueryParam]);
 
-  const PAGE_SIZE = 12;
+  const PAGE_SIZE = 20;
 
   // 1. Fetch Promotions
   useEffect(() => {
@@ -131,8 +132,9 @@ function HomeContent() {
         `/api/products?${params.toString()}`,
       );
 
-      if (json.ok) {
+      if (json.ok && Array.isArray(json.data)) {
         setProducts(json.data);
+        pageRef.current = 1;
         setPage(1);
         setHasMore(json.pagination.page < json.pagination.totalPages);
       }
@@ -148,14 +150,21 @@ function HomeContent() {
 
     setLoadingMore(true);
     try {
-      const nextPage = page + 1;
+      const nextPage = pageRef.current + 1;
       const params = buildProductParams(nextPage);
       const { data: json } = await apiClient.get(
         `/api/products?${params.toString()}`,
       );
 
-      if (json.ok) {
-        setProducts((prev) => [...prev, ...json.data]);
+      if (json.ok && Array.isArray(json.data)) {
+        setProducts((prev) => {
+          const existingIds = new Set(prev.map((p) => p._id));
+          const newItems = json.data.filter(
+            (p: FormattedProduct) => !existingIds.has(p._id),
+          );
+          return [...prev, ...newItems];
+        });
+        pageRef.current = nextPage;
         setPage(nextPage);
         setHasMore(json.pagination.page < json.pagination.totalPages);
       }
@@ -164,7 +173,7 @@ function HomeContent() {
     } finally {
       setLoadingMore(false);
     }
-  }, [buildProductParams, page, loadingMore, hasMore]);
+  }, [buildProductParams, loadingMore, hasMore]);
 
   useEffect(() => {
     fetchProducts();

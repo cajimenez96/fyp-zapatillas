@@ -18,8 +18,11 @@ export async function GET(req: NextRequest) {
     const gender = searchParams.get('gender');
     const search = searchParams.get('search');
     const sort = searchParams.get('sort');
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '20', 10);
+    const pageParam = searchParams.get('page');
+    const limitParam = searchParams.get('limit');
+    const page = pageParam ? Math.max(1, parseInt(pageParam, 10)) : 1;
+    const hasPagination = Boolean(limitParam !== null && parseInt(limitParam, 10) > 0);
+    const limit = hasPagination ? parseInt(limitParam!, 10) : 0;
 
     // Build filter query for active products
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -62,8 +65,6 @@ export async function GET(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     FootwearType;
 
-    const skip = (page - 1) * limit;
-
     // _id as tiebreaker keeps skip/limit pagination stable across pages
     // when many products share the same sort value.
     const sortQuery: Record<string, 1 | -1> =
@@ -74,14 +75,18 @@ export async function GET(req: NextRequest) {
           : { createdAt: -1, _id: 1 };
 
     const total = await Product.countDocuments(query);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const products: any[] = await Product.find(query)
+    let productQuery = Product.find(query)
       .populate('brandId', 'name')
       .populate('typeId', 'name')
-      .sort(sortQuery)
-      .skip(skip)
-      .limit(limit)
-      .lean();
+      .sort(sortQuery);
+
+    if (hasPagination) {
+      const skip = (page - 1) * limit;
+      productQuery = productQuery.skip(skip).limit(limit);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const products: any[] = await productQuery.lean();
 
     // Map products to include totalStock and isOutOfStock flags
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -101,9 +106,9 @@ export async function GET(req: NextRequest) {
       data: formattedProducts,
       pagination: {
         page,
-        limit,
+        limit: hasPagination ? limit : total,
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: hasPagination && limit > 0 ? Math.ceil(total / limit) : 1,
       },
     });
   } catch (error) {

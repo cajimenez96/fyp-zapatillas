@@ -16,8 +16,11 @@ export async function GET(req: NextRequest) {
     const gender = searchParams.get('gender');
     const active = searchParams.get('active');
     const search = searchParams.get('search');
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '50', 10);
+    const pageParam = searchParams.get('page');
+    const limitParam = searchParams.get('limit');
+    const page = pageParam ? Math.max(1, parseInt(pageParam, 10)) : 1;
+    const hasPagination = Boolean(limitParam !== null && parseInt(limitParam, 10) > 0);
+    const limit = hasPagination ? parseInt(limitParam!, 10) : 0;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const query: Record<string, any> = {};
@@ -38,16 +41,19 @@ export async function GET(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     FootwearType;
 
-    const skip = (page - 1) * limit;
     const total = await Product.countDocuments(query);
-
-    const products = await Product.find(query)
+    let productQuery = Product.find(query)
       .populate('brandId', 'name')
       .populate('typeId', 'name')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+      .sort({ createdAt: -1 });
+
+    if (hasPagination) {
+      const skip = (page - 1) * limit;
+      productQuery = productQuery.skip(skip).limit(limit);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const products: any[] = await productQuery.lean();
 
     // Format total stock
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -68,9 +74,9 @@ export async function GET(req: NextRequest) {
       data: formattedProducts,
       pagination: {
         page,
-        limit,
+        limit: hasPagination ? limit : total,
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: hasPagination && limit > 0 ? Math.ceil(total / limit) : 1,
       },
     });
   } catch (error) {

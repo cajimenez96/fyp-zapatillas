@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { AdminNav } from '@/components/admin/AdminNav';
@@ -37,6 +37,9 @@ interface AdminProductItem {
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<AdminProductItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Filter & Search states
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,19 +50,29 @@ export default function AdminProductsPage() {
   const [productToDelete, setProductToDelete] = useState<AdminProductItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const PAGE_SIZE = 25;
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const buildParams = useCallback((targetPage: number) => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.append('search', searchTerm);
+    if (selectedGender) params.append('gender', selectedGender);
+    if (selectedStatus) params.append('active', selectedStatus);
+    params.append('page', targetPage.toString());
+    params.append('limit', PAGE_SIZE.toString());
+    return params;
+  }, [searchTerm, selectedGender, selectedStatus]);
+
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (searchTerm) params.append('search', searchTerm);
-      if (selectedGender) params.append('gender', selectedGender);
-      if (selectedStatus) params.append('active', selectedStatus);
-      params.append('limit', '50');
-
+      const params = buildParams(1);
       const res = await fetch(`/api/admin/products?${params.toString()}`);
       const json = await res.json();
       if (json.ok) {
         setProducts(json.data);
+        setPage(1);
+        setHasMore(json.pagination.page < json.pagination.totalPages);
       }
     } catch (err) {
       console.error('Error cargando productos:', err);
@@ -67,7 +80,49 @@ export default function AdminProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, selectedGender, selectedStatus]);
+  }, [buildParams]);
+
+  const fetchMoreProducts = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const params = buildParams(nextPage);
+      const res = await fetch(`/api/admin/products?${params.toString()}`);
+      const json = await res.json();
+      if (json.ok) {
+        setProducts((prev) => [...prev, ...json.data]);
+        setPage(nextPage);
+        setHasMore(json.pagination.page < json.pagination.totalPages);
+      }
+    } catch (err) {
+      console.error('Error al cargar más productos:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [buildParams, page, loadingMore, hasMore]);
+
+  const onLoadMoreRef = useRef(fetchMoreProducts);
+  useEffect(() => {
+    onLoadMoreRef.current = fetchMoreProducts;
+  }, [fetchMoreProducts]);
+
+  useEffect(() => {
+    if (!hasMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          onLoadMoreRef.current?.();
+        }
+      },
+      { rootMargin: '300px' }
+    );
+    const sentinel = sentinelRef.current;
+    if (sentinel) observer.observe(sentinel);
+    return () => {
+      if (sentinel) observer.unobserve(sentinel);
+    };
+  }, [hasMore]);
 
   useEffect(() => {
     fetchProducts();
@@ -339,6 +394,24 @@ export default function AdminProductsPage() {
                   })}
                 </tbody>
               </table>
+
+              {hasMore && (
+                <div ref={sentinelRef} className="py-4 text-center border-t border-[#e5e5e5] bg-[#fafafa]">
+                  {loadingMore ? (
+                    <div className="flex items-center justify-center gap-2 text-xs text-[#707072]">
+                      <Loader2 className="w-4 h-4 animate-spin text-[#111111]" />
+                      <span>Cargando más productos...</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={fetchMoreProducts}
+                      className="text-xs font-bold text-[#111111] hover:underline cursor-pointer"
+                    >
+                      Cargar más
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

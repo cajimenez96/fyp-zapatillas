@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { AdminNav } from '@/components/admin/AdminNav';
 import { OrderDetailModal, AdminOrderItem } from '@/components/admin/OrderDetailModal';
 import { OrderEditModal } from '@/components/admin/OrderEditModal';
@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Ban,
   Plus,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -40,6 +41,9 @@ import { toast } from '@/components/ui/sonner';
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<AdminOrderItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
@@ -47,18 +51,28 @@ export default function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<AdminOrderItem | null>(null);
   const [editingOrder, setEditingOrder] = useState<AdminOrderItem | null>(null);
 
+  const PAGE_SIZE = 25;
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const buildParams = useCallback((targetPage: number) => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.append('search', searchTerm);
+    if (selectedStatus) params.append('status', selectedStatus);
+    params.append('page', targetPage.toString());
+    params.append('limit', PAGE_SIZE.toString());
+    return params;
+  }, [searchTerm, selectedStatus]);
+
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (searchTerm) params.append('search', searchTerm);
-      if (selectedStatus) params.append('status', selectedStatus);
-      params.append('limit', '50');
-
+      const params = buildParams(1);
       const res = await fetch(`/api/admin/orders?${params.toString()}`);
       const json = await res.json();
       if (json.ok) {
         setOrders(json.data);
+        setPage(1);
+        setHasMore(json.pagination.page < json.pagination.totalPages);
       }
     } catch (err) {
       console.error('Error al cargar solicitudes de pedidos:', err);
@@ -66,7 +80,49 @@ export default function AdminOrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, selectedStatus]);
+  }, [buildParams]);
+
+  const fetchMoreOrders = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const params = buildParams(nextPage);
+      const res = await fetch(`/api/admin/orders?${params.toString()}`);
+      const json = await res.json();
+      if (json.ok) {
+        setOrders((prev) => [...prev, ...json.data]);
+        setPage(nextPage);
+        setHasMore(json.pagination.page < json.pagination.totalPages);
+      }
+    } catch (err) {
+      console.error('Error al cargar más solicitudes de pedidos:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [buildParams, page, loadingMore, hasMore]);
+
+  const onLoadMoreRef = useRef(fetchMoreOrders);
+  useEffect(() => {
+    onLoadMoreRef.current = fetchMoreOrders;
+  }, [fetchMoreOrders]);
+
+  useEffect(() => {
+    if (!hasMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          onLoadMoreRef.current?.();
+        }
+      },
+      { rootMargin: '300px' }
+    );
+    const sentinel = sentinelRef.current;
+    if (sentinel) observer.observe(sentinel);
+    return () => {
+      if (sentinel) observer.unobserve(sentinel);
+    };
+  }, [hasMore]);
 
   useEffect(() => {
     fetchOrders();
@@ -255,6 +311,24 @@ export default function AdminOrdersPage() {
                   ))}
                 </tbody>
               </table>
+
+              {hasMore && (
+                <div ref={sentinelRef} className="py-4 text-center border-t border-[#e5e5e5] bg-[#fafafa]">
+                  {loadingMore ? (
+                    <div className="flex items-center justify-center gap-2 text-xs text-[#707072]">
+                      <Loader2 className="w-4 h-4 animate-spin text-[#111111]" />
+                      <span>Cargando más pedidos...</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={fetchMoreOrders}
+                      className="text-xs font-bold text-[#111111] hover:underline cursor-pointer"
+                    >
+                      Cargar más
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

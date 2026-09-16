@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { SlidersHorizontal, RotateCcw, X, Check, ChevronDown } from "lucide-react";
+import {
+  SlidersHorizontal,
+  RotateCcw,
+  X,
+  Check,
+  ChevronDown,
+} from "lucide-react";
+import { SearchBar } from "@/components/common/SearchBar";
 
 interface FilterOption {
   _id: string;
@@ -25,6 +32,52 @@ interface FilterBarProps {
   onSelectSort: (sort: ProductSort) => void;
   onClearFilters: () => void;
 }
+
+interface TallesFilterProps {
+  availableSizes: number[];
+  selectedSize: number | null;
+  onSelectSize: (size: number | null) => void;
+  className?: string;
+  title?: string;
+}
+
+export const TallesFilter: React.FC<TallesFilterProps> = ({
+  availableSizes,
+  selectedSize,
+  onSelectSize,
+  className = "",
+  title = "Talles Disponibles",
+}) => {
+  if (availableSizes.length === 0) return null;
+
+  return (
+    <div className={className}>
+      {title && (
+        <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2.5">
+          {title}
+        </h4>
+      )}
+      <div className="flex flex-wrap gap-1.5">
+        {availableSizes.map((size) => {
+          const isActive = selectedSize === size;
+          return (
+            <button
+              key={size}
+              onClick={() => onSelectSize(isActive ? null : size)}
+              className={`w-10 h-10 text-xs font-bold rounded-full transition-all flex items-center justify-center cursor-pointer ${
+                isActive
+                  ? "bg-[#111111] text-white shadow-xs"
+                  : "bg-white text-[#111111] border border-[#e5e5e5] hover:border-[#111111]"
+              }`}
+            >
+              {size}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 export const FilterBar: React.FC<FilterBarProps> = ({
   brands,
@@ -88,6 +141,23 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   return (
     <>
       <div className="bg-[#f5f5f5] p-3.5 sm:p-4 border border-[#e5e5e5] mb-6 font-sans">
+        {/* Search Bar only on mobile */}
+        <div className="block sm:hidden mb-3">
+          <SearchBar
+            placeholder="Buscar modelo..."
+            className="w-full"
+            inputClassName="bg-white border border-[#e5e5e5]"
+          />
+        </div>
+
+        {/* Talles only mobile */}
+        <TallesFilter
+          availableSizes={availableSizes}
+          selectedSize={selectedSize}
+          onSelectSize={onSelectSize}
+          className="block sm:hidden mb-3"
+        />
+
         {/* Header Row */}
         <div className="flex justify-between items-center gap-2">
           {/* Left: Button "Más filtros" / "Filtros" */}
@@ -268,31 +338,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               </div>
 
               {/* 4. Talles Grid Selector */}
-              {availableSizes.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-bold text-[#707072] uppercase tracking-wider mb-2.5">
-                    Talles Disponibles
-                  </h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    {availableSizes.map((size) => {
-                      const isActive = selectedSize === size;
-                      return (
-                        <button
-                          key={size}
-                          onClick={() => onSelectSize(isActive ? null : size)}
-                          className={`w-10 h-10 text-xs font-bold rounded-full transition-all flex items-center justify-center cursor-pointer ${
-                            isActive
-                              ? "bg-[#111111] text-white shadow-xs"
-                              : "bg-white text-[#111111] border border-[#e5e5e5] hover:border-[#111111]"
-                          }`}
-                        >
-                          {size}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              <TallesFilter
+                availableSizes={availableSizes}
+                selectedSize={selectedSize}
+                onSelectSize={onSelectSize}
+                className="hidden md:block"
+              />
             </div>
 
             {/* Drawer Footer Actions */}

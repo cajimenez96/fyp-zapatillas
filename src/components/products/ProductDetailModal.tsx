@@ -1,11 +1,18 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { X, ShoppingBag, Check, AlertCircle, ShieldCheck, Tag } from 'lucide-react';
-import { FormattedProduct } from './ProductCard';
-import { useCart } from '@/context/CartContext';
-import { formatPrice } from '@/utils/formatCurrency';
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import {
+  X,
+  ShoppingBag,
+  Check,
+  AlertCircle,
+  ShieldCheck,
+  Tag,
+} from "lucide-react";
+import { FormattedProduct } from "./ProductCard";
+import { useCart } from "@/context/CartContext";
+import { formatPrice } from "@/utils/formatCurrency";
 
 export interface CartItemAddPayload {
   product: FormattedProduct;
@@ -24,7 +31,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onClose,
   onAddToCart,
 }) => {
-  const [selectedImage, setSelectedImage] = useState<string>('');
+  const [selectedImage, setSelectedImage] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<number | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [addedSuccess, setAddedSuccess] = useState(false);
@@ -37,7 +44,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       const primaryUrl =
         product.images.find((img) => img.isPrincipal)?.url ||
         product.images[0]?.url ||
-        '';
+        "";
       setSelectedImage(primaryUrl);
 
       // Auto select first size with stock > 0
@@ -55,14 +62,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   if (!product) return null;
 
   const brandName =
-    typeof product.brandId === 'object' && product.brandId !== null
+    typeof product.brandId === "object" && product.brandId !== null
       ? product.brandId.name
-      : 'Calzado';
+      : "Calzado";
 
   const typeName =
-    typeof product.typeId === 'object' && product.typeId !== null
+    typeof product.typeId === "object" && product.typeId !== null
       ? product.typeId.name
-      : '';
+      : "";
 
   // Resolve prices with legacy fallback
   const retailPrice = product.retailPrice ?? product.price ?? 0;
@@ -74,7 +81,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const pairsToWholesale = Math.max(0, 5 - totalPairs);
 
   // Get max stock for selected size
-  const currentSizeObj = product.sizesStock.find((s) => s.size === selectedSize);
+  const currentSizeObj = product.sizesStock.find(
+    (s) => s.size === selectedSize,
+  );
   const maxStock = currentSizeObj ? currentSizeObj.stock : 0;
 
   const handleAddToCart = () => {
@@ -122,7 +131,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               )}
               {product.isOutOfStock && (
                 <div className="absolute top-4 left-4 bg-[#111111] text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
-                  <AlertCircle className="w-3.5 h-3.5 text-[#d30005]" /> SIN STOCK
+                  <AlertCircle className="w-3.5 h-3.5 text-[#d30005]" /> SIN
+                  STOCK
                 </div>
               )}
             </div>
@@ -136,8 +146,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     onClick={() => setSelectedImage(img.url)}
                     className={`relative w-16 h-16 bg-[#f5f5f5] border-2 transition-all flex-shrink-0 cursor-pointer ${
                       selectedImage === img.url
-                        ? 'border-[#111111]'
-                        : 'border-transparent opacity-70 hover:opacity-100'
+                        ? "border-[#111111]"
+                        : "border-transparent opacity-70 hover:opacity-100"
                     }`}
                   >
                     <Image
@@ -182,28 +192,32 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
                 {/* Wholesale context */}
                 {hasWholesaleDiscount && (
-                  <div className={`p-2.5 rounded-lg text-xs font-semibold flex items-center gap-2 ${
-                    isWholesale
-                      ? 'bg-[#007d48]/10 text-[#007d48] border border-[#007d48]/20'
-                      : 'bg-[#f5f5f5] text-[#707072] border border-[#e5e5e5]'
-                  }`}>
+                  <div
+                    className={`p-2.5 rounded-lg text-xs font-semibold flex items-center gap-2 ${
+                      isWholesale
+                        ? "bg-[#007d48]/10 text-[#007d48] border border-[#007d48]/20"
+                        : "bg-[#f5f5f5] text-[#707072] border border-[#e5e5e5]"
+                    }`}
+                  >
                     <Tag className="w-3.5 h-3.5 flex-shrink-0" />
                     {isWholesale ? (
-                      <span>¡Precio mayorista activo! ({formatPrice(wholesalePrice)} c/u)</span>
+                      <span>
+                        ¡Precio mayorista activo! ({formatPrice(wholesalePrice)}{" "}
+                        c/u)
+                      </span>
                     ) : (
                       <span>
-                        Precio mayorista: {formatPrice(wholesalePrice)} — te faltan{' '}
-                        <strong>{pairsToWholesale} par{pairsToWholesale !== 1 ? 'es' : ''}</strong> más en el carrito.
+                        Precio mayorista: {formatPrice(wholesalePrice)} — te
+                        faltan{" "}
+                        <strong>
+                          {pairsToWholesale} par
+                          {pairsToWholesale !== 1 ? "es" : ""}
+                        </strong>{" "}
+                        más en el carrito.
                       </span>
                     )}
                   </div>
                 )}
-              </div>
-
-              <div className="border-t border-b border-[#f5f5f5] py-3">
-                <p className="text-xs text-[#707072] leading-relaxed">
-                  {product.description}
-                </p>
               </div>
 
               {/* Size Selector */}
@@ -214,8 +228,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </label>
                   {selectedSize && (
                     <span className="text-xs text-[#707072]">
-                      Stock disponible:{' '}
-                      <strong className="text-[#111111]">{maxStock} pares</strong>
+                      Stock disponible:{" "}
+                      <strong className="text-[#111111]">
+                        {maxStock} pares
+                      </strong>
                     </span>
                   )}
                 </div>
@@ -223,8 +239,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <div className="grid grid-cols-5 gap-2">
                   {product.sizesStock
                     .filter((s) => {
-                      const displayedSizes = (product as any).displayedSizes || [];
-                      return displayedSizes.length === 0 || displayedSizes.includes(s.size);
+                      const displayedSizes =
+                        (product as any).displayedSizes || [];
+                      return (
+                        displayedSizes.length === 0 ||
+                        displayedSizes.includes(s.size)
+                      );
                     })
                     .map((s) => {
                       const hasStock = s.stock > 0;
@@ -240,10 +260,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           }}
                           className={`h-11 font-bold text-xs rounded-none border transition-all ${
                             isSelected
-                              ? 'bg-[#111111] text-white border-[#111111] shadow-xs cursor-pointer'
+                              ? "bg-[#111111] text-white border-[#111111] shadow-xs cursor-pointer"
                               : hasStock
-                              ? 'bg-white text-[#111111] border-[#e5e5e5] hover:border-[#111111] cursor-pointer'
-                              : 'bg-[#f5f5f5] text-[#cacacb] border-transparent cursor-not-allowed line-through'
+                                ? "bg-white text-[#111111] border-[#e5e5e5] hover:border-[#111111] cursor-pointer"
+                                : "bg-[#f5f5f5] text-[#cacacb] border-transparent cursor-not-allowed line-through"
                           }`}
                         >
                           {s.size}
@@ -251,6 +271,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       );
                     })}
                 </div>
+              </div>
+
+              <div className="border-t border-b border-[#f5f5f5] py-3">
+                <p className="text-xs text-[#707072] leading-relaxed">
+                  {product.description}
+                </p>
               </div>
 
               {/* Quantity Selector */}
@@ -271,7 +297,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       {quantity}
                     </span>
                     <button
-                      onClick={() => setQuantity((q) => Math.min(maxStock, q + 1))}
+                      onClick={() =>
+                        setQuantity((q) => Math.min(maxStock, q + 1))
+                      }
                       disabled={quantity >= maxStock}
                       className="px-3 py-1.5 text-sm font-bold text-[#111111] hover:bg-[#f5f5f5] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                     >
@@ -289,10 +317,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 disabled={!selectedSize || maxStock === 0 || addedSuccess}
                 className={`w-full py-4 rounded-full font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md cursor-pointer ${
                   addedSuccess
-                    ? 'bg-[#007d48] text-white cursor-default'
+                    ? "bg-[#007d48] text-white cursor-default"
                     : selectedSize && maxStock > 0
-                    ? 'bg-[#111111] hover:bg-black text-white cursor-pointer'
-                    : 'bg-[#f5f5f5] text-[#707072] cursor-not-allowed'
+                      ? "bg-[#111111] hover:bg-black text-white cursor-pointer"
+                      : "bg-[#f5f5f5] text-[#707072] cursor-not-allowed"
                 }`}
               >
                 {addedSuccess ? (

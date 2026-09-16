@@ -69,8 +69,22 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
   if (!order) return null;
 
   const whatsappPhone = order.guest.phone.replace(/[^0-9]/g, '');
+  const itemsList = order.items
+    .map(
+      (item) =>
+        `• ${item.qty}x ${item.name}\n   - Talle: ${item.size}\n   - Subtotal: ${formatPrice(item.subtotal)}`
+    )
+    .join('\n\n');
+
+  const whatsappMessage = `¡Hola ${order.guest.name}! Te escribimos de FP Zapatillas respecto a tu solicitud #${order.orderNumber} 👟
+
+📦 *DETALLE DE TU PEDIDO:*
+${itemsList}
+
+💰 *TOTAL:* ${formatPrice(order.total)}`;
+
   const whatsappUrl = `https://wa.me/${whatsappPhone.startsWith('54') ? whatsappPhone : `54${whatsappPhone}`}?text=${encodeURIComponent(
-    `¡Hola ${order.guest.name}! Te escribimos de FP Zapatillas respecto a tu solicitud #${order.orderNumber}.`
+    whatsappMessage
   )}`;
 
   const statusInfo = STATUS_COLORS[order.status] ?? STATUS_COLORS['pendiente'];

@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
-import { ShoppingBag, Search, Menu, X, Phone } from "lucide-react";
+import { ShoppingBag, Menu, X, Phone } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useSettings } from "@/context/SettingsContext";
+import { SearchBar } from "@/components/common/SearchBar";
 import navbarLogo from "@/assets/navbar.png";
 
 interface HeaderProps {
@@ -14,20 +14,11 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onSearchChange }) => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState(
-    searchParams.get("search") || "",
-  );
   const [topBarWhatsappUrl, setTopBarWhatsappUrl] = useState("");
   const [formattedPhone, setFormattedPhone] = useState("");
   const { totalItems, openCart } = useCart();
   const { settings, formatPhoneNumber } = useSettings();
-
-  useEffect(() => {
-    setSearchTerm(searchParams.get("search") || "");
-  }, [searchParams]);
 
   useEffect(() => {
     if (settings.storePhone) {
@@ -37,23 +28,6 @@ export const Header: React.FC<HeaderProps> = ({ onSearchChange }) => {
       setFormattedPhone(formatPhoneNumber(settings.storePhone));
     }
   }, [settings.storePhone, settings.whatsappInquiryMessage, formatPhoneNumber]);
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-
-    if (onSearchChange) {
-      onSearchChange(value);
-    } else {
-      const params = new URLSearchParams(searchParams.toString());
-      if (value.trim()) {
-        params.set("search", value);
-      } else {
-        params.delete("search");
-      }
-      router.replace(`/?${params.toString()}#catalogo`);
-    }
-  };
 
   const navLinks = [
     { label: "Todos", href: "/#catalogo" },
@@ -127,16 +101,11 @@ export const Header: React.FC<HeaderProps> = ({ onSearchChange }) => {
         {/* Right: Search Pill & Cart Icon */}
         <div className="flex items-center gap-3">
           {/* Search Pill */}
-          <div className="relative hidden sm:block w-48 md:w-60">
-            <input
-              type="text"
-              placeholder="Buscar modelo..."
-              value={searchTerm}
-              onChange={handleSearch}
-              className="w-full bg-[#f5f5f5] text-[#111111] text-xs font-medium placeholder-[#707072] rounded-full py-2 pl-9 pr-4 focus:outline-none focus:ring-2 focus:ring-[#111111] transition-all cursor-text"
-            />
-            <Search className="w-4 h-4 text-[#707072] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
+          <SearchBar
+            onSearchChange={onSearchChange}
+            placeholder="Buscar modelo..."
+            className="hidden sm:block w-48 md:w-60"
+          />
 
           {/* Cart Button */}
           <button
@@ -157,16 +126,12 @@ export const Header: React.FC<HeaderProps> = ({ onSearchChange }) => {
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-white border-b border-[#e5e5e5] px-6 py-4 space-y-4 animate-in slide-in-from-top duration-200">
-          <div className="relative w-full">
-            <input
-              type="text"
-              placeholder="Buscar calzado..."
-              value={searchTerm}
-              onChange={handleSearch}
-              className="w-full bg-[#f5f5f5] text-[#111111] text-sm font-medium rounded-full py-2.5 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-[#111111]"
-            />
-            <Search className="w-4 h-4 text-[#707072] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
+          <SearchBar
+            onSearchChange={onSearchChange}
+            placeholder="Buscar calzado..."
+            className="w-full"
+            inputClassName="text-sm py-2.5 pl-10 pr-8"
+          />
 
           <nav className="flex flex-col space-y-3 font-semibold text-base">
             {navLinks.map((link) => (

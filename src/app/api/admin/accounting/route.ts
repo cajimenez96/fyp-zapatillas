@@ -17,9 +17,9 @@ export async function GET(req: NextRequest) {
     const startDate = new Date(year, month - 1, 1, 0, 0, 0, 0);
     const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
-    // 1. Fetch completed orders in the month
+    // 1. Fetch completed/authorized orders in the month
     const orders = await Order.find({
-      status: 'completada',
+      status: { $in: ['autorizado', 'completada', 'confirmada'] },
       createdAt: { $gte: startDate, $lte: endDate },
     })
       .sort({ createdAt: -1 })

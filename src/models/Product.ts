@@ -25,6 +25,7 @@ export interface IProduct {
   typeId: Types.ObjectId;
   gender: GenderType;
   active: boolean;
+  isClearance?: boolean;
   images: IProductImage[];
   sizesStock: ISizeStock[];
   displayedSizes: number[];
@@ -104,6 +105,11 @@ const ProductSchema: Schema<IProductDocument> = new Schema(
       type: Boolean,
       default: true,
     },
+    isClearance: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     images: {
       type: [ProductImageSchema],
       default: [],
@@ -124,6 +130,7 @@ const ProductSchema: Schema<IProductDocument> = new Schema(
 
 // Compound Indexes for fast catalog queries and filtering
 ProductSchema.index({ active: 1, brandId: 1, typeId: 1, gender: 1 });
+ProductSchema.index({ active: 1, isClearance: 1 });
 ProductSchema.index({ 'sizesStock.size': 1 });
 
 const Product: Model<IProductDocument> =

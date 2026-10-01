@@ -166,10 +166,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           {/* Right: Product Metadata & Size Selector */}
           <div className="flex flex-col justify-between space-y-6">
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-[#707072] uppercase tracking-wider">
-                <span>{brandName}</span>
-                {typeName && <span>• {typeName}</span>}
-                <span>• {product.gender}</span>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#707072] uppercase tracking-wider">
+                  <span>{brandName}</span>
+                  {typeName && <span>• {typeName}</span>}
+                  <span>• {product.gender}</span>
+                </div>
+
+                {product.isClearance && (
+                  <span className="inline-flex items-center gap-1 bg-[#d30005] text-white text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-xs">
+                    🔥 LIQUIDACIÓN
+                  </span>
+                )}
               </div>
 
               <h2 className="text-2xl sm:text-3xl font-extrabold text-[#111111] uppercase tracking-tight leading-tight">
@@ -178,45 +186,64 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
               {/* Pricing Section */}
               <div className="space-y-2">
-                {/* Active price */}
-                <div className="flex items-baseline gap-3">
-                  <span className="text-2xl font-extrabold text-[#111111]">
-                    {formatPrice(effectivePrice)}
-                  </span>
-                  {isWholesale && hasWholesaleDiscount && (
-                    <span className="text-sm line-through text-[#707072]">
-                      {formatPrice(retailPrice)}
-                    </span>
-                  )}
-                </div>
-
-                {/* Wholesale context */}
-                {hasWholesaleDiscount && (
-                  <div
-                    className={`p-2.5 rounded-lg text-xs font-semibold flex items-center gap-2 ${
-                      isWholesale
-                        ? "bg-[#007d48]/10 text-[#007d48] border border-[#007d48]/20"
-                        : "bg-[#f5f5f5] text-[#707072] border border-[#e5e5e5]"
-                    }`}
-                  >
-                    <Tag className="w-3.5 h-3.5 flex-shrink-0" />
-                    {isWholesale ? (
-                      <span>
-                        ¡Precio mayorista activo! ({formatPrice(wholesalePrice)}{" "}
-                        c/u)
+                {product.isClearance ? (
+                  <div>
+                    <div className="text-[11px] font-extrabold uppercase tracking-wider text-[#d30005] mb-1">
+                      Precio Liquidación
+                    </div>
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-3xl font-black text-[#d30005]">
+                        {formatPrice(wholesalePrice || retailPrice)}
                       </span>
-                    ) : (
-                      <span>
-                        Precio mayorista: {formatPrice(wholesalePrice)} — te
-                        faltan{" "}
-                        <strong>
-                          {pairsToWholesale} par
-                          {pairsToWholesale !== 1 ? "es" : ""}
-                        </strong>{" "}
-                        más en el carrito.
-                      </span>
-                    )}
+                    </div>
+                    <div className="mt-2 p-2.5 rounded-lg text-xs font-semibold bg-[#d30005]/10 text-[#d30005] border border-[#d30005]/20 flex items-center gap-2">
+                      <Tag className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>Precio final promocional por liquidación de stock (válido tanto para compra minorista como mayorista).</span>
+                    </div>
                   </div>
+                ) : (
+                  <>
+                    {/* Active price */}
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-2xl font-extrabold text-[#111111]">
+                        {formatPrice(effectivePrice)}
+                      </span>
+                      {isWholesale && hasWholesaleDiscount && (
+                        <span className="text-sm line-through text-[#707072]">
+                          {formatPrice(retailPrice)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Wholesale context */}
+                    {hasWholesaleDiscount && (
+                      <div
+                        className={`p-2.5 rounded-lg text-xs font-semibold flex items-center gap-2 ${
+                          isWholesale
+                            ? "bg-[#007d48]/10 text-[#007d48] border border-[#007d48]/20"
+                            : "bg-[#f5f5f5] text-[#707072] border border-[#e5e5e5]"
+                        }`}
+                      >
+                        <Tag className="w-3.5 h-3.5 flex-shrink-0" />
+                        {isWholesale ? (
+                          <span>
+                            ¡Precio mayorista activo! ({formatPrice(wholesalePrice)}{" "}
+                            c/u)
+                          </span>
+                        ) : (
+                          <span>
+                            Precio mayorista: {formatPrice(wholesalePrice)} — te
+                            faltan{" "}
+                            <strong>
+                              {pairsToWholesale} par
+                              {pairsToWholesale !== 1 ? "es" : ""}
+                            </strong>{" "}
+                            más en el carrito.
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 

@@ -35,6 +35,7 @@ export const Header: React.FC<HeaderProps> = ({ onSearchChange }) => {
     { label: "Mujer", href: "/?gender=Mujer#catalogo" },
     { label: "Niño", href: "/?gender=Niño#catalogo" },
     { label: "Unisex", href: "/?gender=Unisex#catalogo" },
+    { label: "🔥 Liquidación", href: "/?clearance=true#catalogo", isClearance: true },
   ];
 
   return (
@@ -91,7 +92,11 @@ export const Header: React.FC<HeaderProps> = ({ onSearchChange }) => {
             <Link
               key={link.label}
               href={link.href}
-              className="hover:text-[#707072] transition-colors py-1 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] after:bg-[#111111] hover:after:w-full after:transition-all cursor-pointer"
+              className={`py-1 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[2px] hover:after:w-full after:transition-all cursor-pointer ${
+                link.isClearance
+                  ? 'text-[#d30005] font-extrabold hover:text-red-700 after:bg-[#d30005]'
+                  : 'hover:text-[#707072] text-[#111111] after:bg-[#111111]'
+              }`}
             >
               {link.label}
             </Link>
@@ -139,7 +144,11 @@ export const Header: React.FC<HeaderProps> = ({ onSearchChange }) => {
                 key={link.label}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-1.5 text-[#111111] hover:text-[#707072] border-b border-[#f5f5f5] cursor-pointer"
+                className={`py-1.5 border-b border-[#f5f5f5] cursor-pointer ${
+                  link.isClearance
+                    ? 'text-[#d30005] font-extrabold'
+                    : 'text-[#111111] hover:text-[#707072]'
+                }`}
               >
                 {link.label}
               </Link>

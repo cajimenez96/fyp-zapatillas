@@ -32,6 +32,7 @@ interface ProductFormProps {
     typeId: string | { _id: string; name: string };
     gender: GenderType;
     active: boolean;
+    isClearance?: boolean;
     images: IProductImage[];
     sizesStock: ISizeStock[];
     displayedSizes?: number[];
@@ -85,6 +86,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   );
   const [active, setActive] = useState<boolean>(
     initialData?.active !== undefined ? initialData.active : true,
+  );
+  const [isClearance, setIsClearance] = useState<boolean>(
+    initialData?.isClearance || false,
   );
 
   // Images state: array of { url, fileId, isPrincipal, position }
@@ -214,23 +218,32 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       });
       return;
     }
-    if (retailPrice === "" || Number(retailPrice) < 0) {
-      toast.error("Ingresá un precio minorista válido", {
-        description: "El valor debe ser mayor o igual a 0.",
-      });
-      return;
-    }
-    if (wholesalePrice === "" || Number(wholesalePrice) < 0) {
-      toast.error("Ingresá un precio mayorista válido", {
-        description: "El valor debe ser mayor o igual a 0.",
-      });
-      return;
-    }
-    if (Number(wholesalePrice) > Number(retailPrice)) {
-      toast.error("El precio mayorista no puede superar al minorista", {
-        description: "Ajustá los valores antes de guardar.",
-      });
-      return;
+    if (isClearance) {
+      if (wholesalePrice === "" || Number(wholesalePrice) < 0) {
+        toast.error("Ingresá un precio de liquidación válido", {
+          description: "El valor debe ser mayor o igual a 0.",
+        });
+        return;
+      }
+    } else {
+      if (retailPrice === "" || Number(retailPrice) < 0) {
+        toast.error("Ingresá un precio minorista válido", {
+          description: "El valor debe ser mayor o igual a 0.",
+        });
+        return;
+      }
+      if (wholesalePrice === "" || Number(wholesalePrice) < 0) {
+        toast.error("Ingresá un precio mayorista válido", {
+          description: "El valor debe ser mayor o igual a 0.",
+        });
+        return;
+      }
+      if (Number(wholesalePrice) > Number(retailPrice)) {
+        toast.error("El precio mayorista no puede superar al minorista", {
+          description: "Ajustá los valores antes de guardar.",
+        });
+        return;
+      }
     }
     if (!brandId || !typeId) {
       toast.error("Seleccioná la Marca y Tipo de Calzado", {
@@ -268,12 +281,14 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             _id: initialData?._id,
             name: name.trim(),
             description: description.trim(),
-            retailPrice: Number(retailPrice),
+            retailPrice: isClearance ? Number(wholesalePrice) : Number(retailPrice),
             wholesalePrice: Number(wholesalePrice),
+            price: isClearance ? Number(wholesalePrice) : Number(retailPrice),
             brandId,
             typeId,
             gender,
             active,
+            isClearance,
             images: validImages,
             sizesStock,
             displayedSizes,
@@ -281,12 +296,14 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         : {
             name: name.trim(),
             description: description.trim(),
-            retailPrice: Number(retailPrice),
+            retailPrice: isClearance ? Number(wholesalePrice) : Number(retailPrice),
             wholesalePrice: Number(wholesalePrice),
+            price: isClearance ? Number(wholesalePrice) : Number(retailPrice),
             brandId,
             typeId,
             gender,
             active,
+            isClearance,
             images: validImages,
             sizesStock,
             displayedSizes,
@@ -388,53 +405,77 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider text-[#111111] mb-1.5">
-                  Precio Minorista ($ ARS) *
+            {isClearance ? (
+              <div className="p-4 bg-[#d30005]/5 border border-[#d30005]/20 space-y-2">
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-[#d30005] mb-1.5">
+                  🔥 Precio Liquidación ($ ARS) *
                 </label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
-                  placeholder="Ej: 130000"
-                  value={retailPrice}
-                  onChange={(e) =>
-                    setRetailPrice(
-                      e.target.value === "" ? "" : Number(e.target.value),
-                    )
-                  }
-                  className="w-full bg-[#f5f5f5] text-[#111111] text-sm font-extrabold py-3 px-3 rounded-none border border-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#111111]"
-                />
-                <p className="text-[10px] text-[#707072] mt-1">
-                  Precio para compras de 1 a 4 pares
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider text-[#111111] mb-1.5">
-                  Precio Mayorista ($ ARS) *
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="Ej: 110000"
+                  placeholder="Ej: 95000"
                   value={wholesalePrice}
-                  onChange={(e) =>
-                    setWholesalePrice(
-                      e.target.value === "" ? "" : Number(e.target.value),
-                    )
-                  }
-                  className="w-full bg-[#f5f5f5] text-[#111111] text-sm font-extrabold py-3 px-3 rounded-none border border-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#111111]"
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? "" : Number(e.target.value);
+                    setWholesalePrice(val);
+                    setRetailPrice(val);
+                  }}
+                  className="w-full bg-white text-[#d30005] text-base font-extrabold py-3 px-3 rounded-none border border-[#d30005]/40 focus:outline-none focus:ring-2 focus:ring-[#d30005]"
                 />
-                <p className="text-[10px] text-[#707072] mt-1">
-                  Precio para compras de 5 pares o más
+                <p className="text-[11px] text-[#707072] font-medium">
+                  Precio único promocional para este producto en liquidación (válido para compra minorista y mayorista).
                 </p>
               </div>
-            </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-[#111111] mb-1.5">
+                    Precio Minorista ($ ARS) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Ej: 130000"
+                    value={retailPrice}
+                    onChange={(e) =>
+                      setRetailPrice(
+                        e.target.value === "" ? "" : Number(e.target.value),
+                      )
+                    }
+                    className="w-full bg-[#f5f5f5] text-[#111111] text-sm font-extrabold py-3 px-3 rounded-none border border-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#111111]"
+                  />
+                  <p className="text-[10px] text-[#707072] mt-1">
+                    Precio para compras de 1 a 4 pares
+                  </p>
+                </div>
 
-            <div className="flex items-center pt-2">
+                <div>
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-[#111111] mb-1.5">
+                    Precio Mayorista ($ ARS) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Ej: 110000"
+                    value={wholesalePrice}
+                    onChange={(e) =>
+                      setWholesalePrice(
+                        e.target.value === "" ? "" : Number(e.target.value),
+                      )
+                    }
+                    className="w-full bg-[#f5f5f5] text-[#111111] text-sm font-extrabold py-3 px-3 rounded-none border border-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#111111]"
+                  />
+                  <p className="text-[10px] text-[#707072] mt-1">
+                    Precio para compras de 5 pares o más
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-4 pt-3 border-t border-[#e5e5e5]">
               <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-[#111111]">
                 <input
                   type="checkbox"
@@ -443,6 +484,26 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                   className="w-4 h-4 accent-[#111111] cursor-pointer"
                 />
                 <span>Producto Activo (Visible en tienda)</span>
+              </label>
+
+              <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-[#d30005]">
+                <input
+                  type="checkbox"
+                  checked={isClearance}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setIsClearance(checked);
+                    if (checked) {
+                      if (wholesalePrice !== "" && Number(wholesalePrice) > 0) {
+                        setRetailPrice(wholesalePrice);
+                      } else if (retailPrice !== "" && Number(retailPrice) > 0) {
+                        setWholesalePrice(retailPrice);
+                      }
+                    }
+                  }}
+                  className="w-4 h-4 accent-[#d30005] cursor-pointer"
+                />
+                <span>🔥 Producto en Liquidación</span>
               </label>
             </div>
           </div>

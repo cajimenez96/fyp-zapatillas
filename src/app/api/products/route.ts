@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
     const size = searchParams.get('size');
     const gender = searchParams.get('gender');
     const search = searchParams.get('search');
+    const clearance = searchParams.get('clearance') || searchParams.get('isClearance');
     const sort = searchParams.get('sort');
     const pageParam = searchParams.get('page');
     const limitParam = searchParams.get('limit');
@@ -27,6 +28,10 @@ export async function GET(req: NextRequest) {
     // Build filter query for active products
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const query: Record<string, any> = { active: true };
+
+    if (clearance === 'true') {
+      query.isClearance = true;
+    }
 
     if (brandId) {
       const brands = brandId.split(',').filter(Boolean);

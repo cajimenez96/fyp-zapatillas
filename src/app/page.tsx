@@ -21,6 +21,7 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const searchQueryParam = searchParams.get("search") || "";
   const genderQueryParam = searchParams.get("gender") || null;
+  const clearanceQueryParam = searchParams.get("clearance") === "true";
 
   const [promotions, setPromotions] = useState<IPromotion[]>([]);
   const [products, setProducts] = useState<FormattedProduct[]>([]);
@@ -43,6 +44,7 @@ function HomeContent() {
   const [selectedGender, setSelectedGender] = useState<string | null>(
     genderQueryParam,
   );
+  const [isClearanceOnly, setIsClearanceOnly] = useState<boolean>(clearanceQueryParam);
   const [selectedSort, setSelectedSort] = useState<ProductSort>(null);
 
   const { addToCart } = useCart();
@@ -50,6 +52,13 @@ function HomeContent() {
   useEffect(() => {
     setSelectedGender(genderQueryParam);
   }, [genderQueryParam]);
+
+  useEffect(() => {
+    setIsClearanceOnly(clearanceQueryParam);
+    if (clearanceQueryParam) {
+      setSelectedGender(null);
+    }
+  }, [clearanceQueryParam]);
 
   const PAGE_SIZE = 20;
 
@@ -106,6 +115,9 @@ function HomeContent() {
       if (selectedGender !== null) {
         params.append("gender", selectedGender);
       }
+      if (isClearanceOnly) {
+        params.append("clearance", "true");
+      }
       if (selectedSort) {
         params.append("sort", selectedSort);
       }
@@ -120,6 +132,7 @@ function HomeContent() {
       selectedTypeIds,
       selectedSize,
       selectedGender,
+      isClearanceOnly,
       selectedSort,
     ],
   );
@@ -201,6 +214,7 @@ function HomeContent() {
     setSelectedTypeIds([]);
     setSelectedSize(null);
     setSelectedGender(null);
+    setIsClearanceOnly(false);
     setSelectedSort(null);
   };
 
@@ -221,18 +235,34 @@ function HomeContent() {
       <section id="catalogo" className="mt-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-6">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#111111] uppercase tracking-tight">
-              Catálogo de Calzado
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#111111] uppercase tracking-tight flex items-center gap-2">
+              {isClearanceOnly ? (
+                <>
+                  <span className="text-[#d30005]">🔥 Calzado en Liquidación</span>
+                  <span className="text-xs font-bold text-[#d30005] bg-[#d30005]/10 px-2.5 py-0.5 rounded-full border border-[#d30005]/20">
+                    OFERTAS EXCLUSIVAS
+                  </span>
+                </>
+              ) : (
+                "Catálogo de Calzado"
+              )}
             </h2>
             <p className="text-xs text-[#707072] mt-0.5">
-              {searchQueryParam
+              {isClearanceOnly
+                ? "Aprovechá modelos seleccionados con precios de liquidación y descuentos especiales."
+                : searchQueryParam
                 ? `Resultados para "${searchQueryParam}"`
                 : "Descubrí nuestro stock disponible. Elegí tu talle y hacé tu pedido directo por WhatsApp."}
             </p>
           </div>
-          {/* <span className="text-xs font-bold text-[#111111] bg-[#f5f5f5] px-3 py-1 rounded-full border border-[#e5e5e5]">
-            {products.length} modelos mostrados
-          </span> */}
+          {isClearanceOnly && (
+            <button
+              onClick={handleClearFilters}
+              className="text-xs font-bold text-[#111111] hover:underline bg-[#f5f5f5] px-3 py-1.5 rounded-full border border-[#e5e5e5] cursor-pointer"
+            >
+              Ver todo el catálogo
+            </button>
+          )}
         </div>
 
         {/* Filter Bar */}

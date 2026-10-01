@@ -22,6 +22,7 @@ export interface FormattedProduct {
   sizesStock: ISizeStock[];
   totalStock: number;
   isOutOfStock: boolean;
+  isClearance?: boolean;
 }
 
 interface ProductCardProps {
@@ -77,6 +78,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Badge Overlay (Top Left) */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
+          {product.isClearance && !product.isOutOfStock && (
+            <span className="inline-flex items-center gap-1 bg-[#d30005] text-white text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-md animate-pulse">
+              🔥 LIQUIDACIÓN
+            </span>
+          )}
           {product.isOutOfStock ? (
             <span className="inline-flex items-center gap-1 bg-[#111111] text-white text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm">
               <AlertCircle className="w-3 h-3 text-[#d30005]" /> SIN STOCK
@@ -88,12 +94,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               </span>
             )
           )}
-          {/* Wholesale badge */}
-          {/* {hasWholesaleDiscount && !product.isOutOfStock && (
-            <span className="inline-flex items-center gap-1 bg-[#007d48] text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">
-              <Tag className="w-3 h-3" /> Precio Mayorista
-            </span>
-          )} */}
         </div>
 
         {/* Hover Quick Action Overlay */}
@@ -136,21 +136,34 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
 
-        {/* Dual Price Row */}
-        <div className="flex items-baseline gap-2 mt-1 flex-wrap">
-          <span className="font-extrabold text-lg text-[#111111]">
-            {formatPrice(retailPrice)}
-          </span>
-          {hasWholesaleDiscount && (
-            <span className="text-xs font-bold text-[#007d48] bg-[#007d48]/10 px-2 py-0.5 rounded-full">
-              Mayorista: {formatPrice(wholesalePrice)}
+        {/* Price Row */}
+        {product.isClearance ? (
+          <div className="flex items-baseline gap-2 mt-1 flex-wrap">
+            <span className="font-extrabold text-lg text-[#d30005]">
+              {formatPrice(wholesalePrice || retailPrice)}
             </span>
-          )}
-        </div>
-        {hasWholesaleDiscount && (
-          <p className="text-[10px] text-[#707072] font-medium mt-0.5">
-            ✦ Precio mayorista 5 pares o más
-          </p>
+            <span className="text-[10px] font-extrabold text-[#d30005] bg-[#d30005]/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
+              Liquidación
+            </span>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-baseline gap-2 mt-1 flex-wrap">
+              <span className="font-extrabold text-lg text-[#111111]">
+                {formatPrice(retailPrice)}
+              </span>
+              {hasWholesaleDiscount && (
+                <span className="text-xs font-bold text-[#007d48] bg-[#007d48]/10 px-2 py-0.5 rounded-full">
+                  Mayorista: {formatPrice(wholesalePrice)}
+                </span>
+              )}
+            </div>
+            {hasWholesaleDiscount && (
+              <p className="text-[10px] text-[#707072] font-medium mt-0.5">
+                ✦ Precio mayorista 5 pares o más
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>

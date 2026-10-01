@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
     const typeId = searchParams.get('typeId');
     const gender = searchParams.get('gender');
     const active = searchParams.get('active');
+    const isClearance = searchParams.get('isClearance') || searchParams.get('clearance');
     const search = searchParams.get('search');
     const pageParam = searchParams.get('page');
     const limitParam = searchParams.get('limit');
@@ -30,6 +31,9 @@ export async function GET(req: NextRequest) {
     if (gender) query.gender = gender;
     if (active !== null && active !== undefined && active !== '') {
       query.active = active === 'true';
+    }
+    if (isClearance !== null && isClearance !== undefined && isClearance !== '') {
+      query.isClearance = isClearance === 'true';
     }
     if (search) {
       query.name = { $regex: search, $options: 'i' };
@@ -93,7 +97,7 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
     const body = await req.json();
 
-    const { name, description, retailPrice, wholesalePrice, brandId, typeId, gender, active, images, sizesStock, displayedSizes } = body;
+    const { name, description, retailPrice, wholesalePrice, brandId, typeId, gender, active, isClearance, images, sizesStock, displayedSizes } = body;
 
     // Validations
     if (!name || !name.trim()) {
@@ -154,6 +158,7 @@ export async function POST(req: NextRequest) {
       typeId,
       gender,
       active: active !== undefined ? Boolean(active) : true,
+      isClearance: isClearance !== undefined ? Boolean(isClearance) : false,
       images,
       sizesStock,
       displayedSizes: displayedSizes || [],
@@ -174,7 +179,7 @@ export async function PUT(req: NextRequest) {
     await connectToDatabase();
     const body = await req.json();
     const productId = body._id || body.id;
-    const { name, description, retailPrice, wholesalePrice, active, images, sizesStock, brandId, typeId, gender, displayedSizes } = body;
+    const { name, description, retailPrice, wholesalePrice, active, isClearance, images, sizesStock, brandId, typeId, gender, displayedSizes } = body;
 
     if (!productId) {
       return NextResponse.json(
@@ -194,6 +199,7 @@ export async function PUT(req: NextRequest) {
     if (typeId !== undefined) updateFields.typeId = typeId;
     if (gender !== undefined) updateFields.gender = gender;
     if (active !== undefined) updateFields.active = Boolean(active);
+    if (isClearance !== undefined) updateFields.isClearance = Boolean(isClearance);
     if (images !== undefined) updateFields.images = images;
     if (sizesStock !== undefined) updateFields.sizesStock = sizesStock;
     if (displayedSizes !== undefined) updateFields.displayedSizes = displayedSizes;

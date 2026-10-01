@@ -32,6 +32,7 @@ interface AdminProductItem {
   typeId: { _id: string; name: string } | string;
   images: Array<{ url: string; isPrincipal: boolean }>;
   totalStock: number;
+  isClearance?: boolean;
 }
 
 export default function AdminProductsPage() {
@@ -312,9 +313,16 @@ export default function AdminProductsPage() {
                                 />
                               )}
                             </div>
-                            <span className="font-extrabold text-sm text-[#111111] line-clamp-1">
-                              {prod.name}
-                            </span>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="font-extrabold text-sm text-[#111111] truncate">
+                                {prod.name}
+                              </span>
+                              {prod.isClearance && (
+                                <span className="bg-[#d30005] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shrink-0">
+                                  🔥 LIQ
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </td>
 
@@ -328,13 +336,26 @@ export default function AdminProductsPage() {
                         </td>
 
                         <td className="py-3 px-4 text-right">
-                          <div className="font-extrabold text-sm text-[#111111]">
-                            {formatPrice(prod.retailPrice ?? prod.price)}
-                          </div>
-                          {(prod.wholesalePrice !== undefined && prod.wholesalePrice !== null) && (
-                            <div className="text-[10px] font-bold text-[#007d48]">
-                              May: {formatPrice(prod.wholesalePrice)}
+                          {prod.isClearance ? (
+                            <div>
+                              <div className="font-extrabold text-sm text-[#d30005]">
+                                {formatPrice(prod.wholesalePrice ?? prod.retailPrice ?? prod.price)}
+                              </div>
+                              <div className="text-[10px] font-extrabold text-[#d30005] uppercase">
+                                Liquidación
+                              </div>
                             </div>
+                          ) : (
+                            <>
+                              <div className="font-extrabold text-sm text-[#111111]">
+                                {formatPrice(prod.retailPrice ?? prod.price)}
+                              </div>
+                              {(prod.wholesalePrice !== undefined && prod.wholesalePrice !== null) && (
+                                <div className="text-[10px] font-bold text-[#007d48]">
+                                  May: {formatPrice(prod.wholesalePrice)}
+                                </div>
+                              )}
+                            </>
                           )}
                         </td>
 

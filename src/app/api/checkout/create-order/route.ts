@@ -79,9 +79,13 @@ export async function POST(req: NextRequest) {
       const itemSubtotal = itemPrice * itemQty;
       calculatedSubtotal += itemSubtotal;
 
+      const principalImage =
+        dbProd.images?.find((img) => img.isPrincipal)?.url || dbProd.images?.[0]?.url || '';
+
       validatedItems.push({
         productId: dbProd._id,
         name: dbProd.name,
+        image: principalImage,
         size: parseInt(String(item.size), 10),
         qty: itemQty,
         appliedPriceType: appliedPriceType as 'retail' | 'wholesale',

@@ -136,9 +136,13 @@ export async function POST(req: NextRequest) {
       const itemSubtotal = unitPrice * itemQty;
       calculatedSubtotal += itemSubtotal;
 
+      const principalImage =
+        product.images?.find((img: any) => img.isPrincipal)?.url || product.images?.[0]?.url || '';
+
       validatedItems.push({
         productId: product._id,
         name: product.name,
+        image: principalImage,
         size: Number(item.size),
         qty: itemQty,
         appliedPriceType,

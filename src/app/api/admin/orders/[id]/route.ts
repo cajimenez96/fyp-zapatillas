@@ -13,7 +13,7 @@ export async function GET(
     await connectToDatabase();
     const { id } = await params;
 
-    const order = await Order.findById(id).lean();
+    const order = await Order.findById(id).populate('items.productId', 'images name').lean();
 
     if (!order) {
       return NextResponse.json(
@@ -22,7 +22,24 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ ok: true, data: order });
+    const formattedOrder = {
+      ...order,
+      items: ((order as any).items || []).map((item: any) => {
+        const prod = item.productId && typeof item.productId === 'object' ? item.productId : null;
+        const mainImage =
+          item.image ||
+          prod?.images?.find((img: any) => img.isPrincipal)?.url ||
+          prod?.images?.[0]?.url ||
+          '';
+        return {
+          ...item,
+          productId: prod?._id ? prod._id.toString() : item.productId?.toString() || '',
+          image: mainImage,
+        };
+      }),
+    };
+
+    return NextResponse.json({ ok: true, data: formattedOrder });
   } catch (error) {
     console.error('Error al obtener orden:', error);
     return NextResponse.json(
@@ -75,29 +92,41 @@ export async function PUT(
 
     // Update items if provided — recalculate subtotals
     if (items && Array.isArray(items) && items.length > 0) {
+      const productIds = items.map((i: any) => i.productId);
+      const dbProducts = await Product.find({
+        _id: { $in: productIds.map((pid: string) => new Types.ObjectId(pid)) },
+      }).lean();
+      const productMap = new Map(dbProducts.map((p) => [p._id.toString(), p]));
+
       const validatedItems = items.map((item: {
         productId: string;
         name: string;
+        image?: string;
         size: number;
         qty: number;
         unitPrice: number;
         appliedPriceType?: string;
-      }) => ({
-        productId: item.productId,
-        name: item.name,
-        size: Number(item.size),
-        qty: Math.max(1, Number(item.qty)),
-        appliedPriceType: (item.appliedPriceType ?? 'custom') as 'retail' | 'wholesale' | 'custom',
-        unitPrice: Number(item.unitPrice),
-        subtotal: Number(item.unitPrice) * Math.max(1, Number(item.qty)),
-      }));
+      }) => {
+        const dbProd = productMap.get(item.productId);
+        const resolvedImage =
+          item.image ||
+          dbProd?.images?.find((img) => img.isPrincipal)?.url ||
+          dbProd?.images?.[0]?.url ||
+          '';
 
-      // Cast productId strings to ObjectId for Mongoose schema compatibility
-      const castItems = validatedItems.map((i) => ({
-        ...i,
-        productId: new Types.ObjectId(i.productId as string),
-      }));
-      order.items = castItems as typeof order.items;
+        return {
+          productId: new Types.ObjectId(item.productId as string),
+          name: item.name,
+          image: resolvedImage,
+          size: Number(item.size),
+          qty: Math.max(1, Number(item.qty)),
+          appliedPriceType: (item.appliedPriceType ?? 'custom') as 'retail' | 'wholesale' | 'custom',
+          unitPrice: Number(item.unitPrice),
+          subtotal: Number(item.unitPrice) * Math.max(1, Number(item.qty)),
+        };
+      });
+
+      order.items = validatedItems as typeof order.items;
     }
 
     // Recalculate subtotal from items

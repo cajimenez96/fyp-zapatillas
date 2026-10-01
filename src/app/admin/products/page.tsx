@@ -91,7 +91,11 @@ export default function AdminProductsPage() {
       const res = await fetch(`/api/admin/products?${params.toString()}`);
       const json = await res.json();
       if (json.ok) {
-        setProducts((prev) => [...prev, ...json.data]);
+        setProducts((prev) => {
+          const existingIds = new Set(prev.map((p) => p._id));
+          const uniqueIncoming = (json.data || []).filter((p: AdminProductItem) => !existingIds.has(p._id));
+          return [...prev, ...uniqueIncoming];
+        });
         setPage(nextPage);
         setHasMore(json.pagination.page < json.pagination.totalPages);
       }

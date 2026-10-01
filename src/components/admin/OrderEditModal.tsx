@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Loader2, Save, Search } from 'lucide-react';
+import { X, Plus, Trash2, Loader2, Save, Search, ShoppingBag, ZoomIn } from 'lucide-react';
 import { AdminOrderItem } from './OrderDetailModal';
 import { formatPrice } from '@/utils/formatCurrency';
 import { toast } from '@/components/ui/sonner';
@@ -10,6 +10,7 @@ import Image from 'next/image';
 interface EditableOrderItem {
   productId: string;
   name: string;
+  image?: string;
   size: number;
   qty: number;
   unitPrice: number;
@@ -42,6 +43,7 @@ export const OrderEditModal: React.FC<OrderEditModalProps> = ({ order, onClose, 
   const [guestName, setGuestName] = useState<string>('');
   const [guestLastName, setGuestLastName] = useState<string>('');
   const [guestPhone, setGuestPhone] = useState<string>('');
+  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
 
   // Product search
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,6 +59,7 @@ export const OrderEditModal: React.FC<OrderEditModalProps> = ({ order, onClose, 
         order.items.map((i) => ({
           productId: i.productId,
           name: i.name,
+          image: i.image,
           size: i.size,
           qty: i.qty,
           unitPrice: i.unitPrice,
@@ -117,12 +120,14 @@ export const OrderEditModal: React.FC<OrderEditModalProps> = ({ order, onClose, 
       return;
     }
 
+    const mainImg = product.images?.find((img) => img.isPrincipal)?.url || product.images?.[0]?.url || '';
     const unitPrice = product.retailPrice ?? 0;
     setItems((prev) => [
       ...prev,
       {
         productId: product._id,
         name: product.name,
+        image: mainImg,
         size,
         qty: 1,
         unitPrice,
@@ -151,6 +156,7 @@ export const OrderEditModal: React.FC<OrderEditModalProps> = ({ order, onClose, 
           items: items.map((i) => ({
             productId: i.productId,
             name: i.name,
+            image: i.image,
             size: i.size,
             qty: i.qty,
             unitPrice: i.unitPrice,
@@ -232,6 +238,36 @@ export const OrderEditModal: React.FC<OrderEditModalProps> = ({ order, onClose, 
             <div className="border border-[#e5e5e5] divide-y divide-[#e5e5e5]">
               {items.map((item, idx) => (
                 <div key={idx} className="p-3 flex items-center gap-3 text-xs">
+                  {/* Thumbnail */}
+                  <button
+                    type="button"
+                    onClick={() => item.image && setPreviewImage({ url: item.image, name: item.name })}
+                    disabled={!item.image}
+                    className={`relative w-10 h-10 bg-white border border-[#e5e5e5] shrink-0 overflow-hidden flex items-center justify-center group ${
+                      item.image
+                        ? 'cursor-zoom-in hover:border-[#111111] transition-all'
+                        : 'cursor-default'
+                    }`}
+                    title={item.image ? 'Ampliar foto del producto' : undefined}
+                  >
+                    {item.image ? (
+                      <>
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          fill
+                          sizes="40px"
+                          className="object-cover object-center group-hover:scale-105 transition-transform duration-200"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <ZoomIn className="w-3.5 h-3.5 text-white drop-shadow-md" />
+                        </div>
+                      </>
+                    ) : (
+                      <ShoppingBag className="w-4 h-4 text-[#707072]" />
+                    )}
+                  </button>
+
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-[#111111] truncate">{item.name}</p>
                     <p className="text-[#707072]">Talle {item.size}</p>
@@ -434,6 +470,43 @@ export const OrderEditModal: React.FC<OrderEditModalProps> = ({ order, onClose, 
           </button>
         </div>
       </div>
+
+      {/* Image Preview Lightbox Modal */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="relative bg-white max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-[#e5e5e5] space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
+              <h4 className="font-extrabold text-sm uppercase text-[#111111] truncate pr-4">
+                {previewImage.name}
+              </h4>
+              <button
+                type="button"
+                onClick={() => setPreviewImage(null)}
+                className="p-1.5 text-[#111111] bg-[#f5f5f5] hover:bg-[#111111] hover:text-white rounded-full transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="relative w-full h-80 sm:h-96 bg-[#f5f5f5] border border-[#e5e5e5] overflow-hidden flex items-center justify-center">
+              <Image
+                src={previewImage.url}
+                alt={previewImage.name}
+                fill
+                sizes="(max-width: 768px) 100vw, 512px"
+                className="object-contain p-2"
+                priority
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

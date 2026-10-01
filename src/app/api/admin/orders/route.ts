@@ -36,7 +36,9 @@ export async function GET(req: NextRequest) {
     }
 
     const total = await Order.countDocuments(query);
-    let orderQuery = Order.find(query).sort({ createdAt: -1 });
+    let orderQuery = Order.find(query)
+      .populate('items.productId', 'images name')
+      .sort({ createdAt: -1, _id: -1 });
 
     if (hasPagination) {
       const skip = (page - 1) * limit;
@@ -45,9 +47,26 @@ export async function GET(req: NextRequest) {
 
     const orders = await orderQuery.lean();
 
+    const formattedOrders = orders.map((order: any) => ({
+      ...order,
+      items: (order.items || []).map((item: any) => {
+        const prod = item.productId && typeof item.productId === 'object' ? item.productId : null;
+        const mainImage =
+          item.image ||
+          prod?.images?.find((img: any) => img.isPrincipal)?.url ||
+          prod?.images?.[0]?.url ||
+          '';
+        return {
+          ...item,
+          productId: prod?._id ? prod._id.toString() : item.productId?.toString() || '',
+          image: mainImage,
+        };
+      }),
+    }));
+
     return NextResponse.json({
       ok: true,
-      data: orders,
+      data: formattedOrders,
       pagination: {
         page,
         limit: hasPagination ? limit : total,

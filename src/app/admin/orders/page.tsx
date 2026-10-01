@@ -91,7 +91,11 @@ export default function AdminOrdersPage() {
       const res = await fetch(`/api/admin/orders?${params.toString()}`);
       const json = await res.json();
       if (json.ok) {
-        setOrders((prev) => [...prev, ...json.data]);
+        setOrders((prev) => {
+          const existingIds = new Set(prev.map((o) => o._id));
+          const uniqueIncoming = (json.data || []).filter((o: AdminOrderItem) => !existingIds.has(o._id));
+          return [...prev, ...uniqueIncoming];
+        });
         setPage(nextPage);
         setHasMore(json.pagination.page < json.pagination.totalPages);
       }

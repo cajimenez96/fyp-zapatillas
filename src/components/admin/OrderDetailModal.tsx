@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, MessageSquare, Check, Ban, Clock, Loader2, ShieldCheck, Edit3 } from 'lucide-react';
+import Image from 'next/image';
+import { X, MessageSquare, Check, Ban, Clock, Loader2, ShieldCheck, Edit3, ShoppingBag, ZoomIn } from 'lucide-react';
 import type { OrderStatus } from '@/models/Order';
 import { formatPrice } from '@/utils/formatCurrency';
 
@@ -24,6 +25,7 @@ export interface AdminOrderItem {
   items: Array<{
     productId: string;
     name: string;
+    image?: string;
     size: number;
     qty: number;
     appliedPriceType?: 'retail' | 'wholesale' | 'custom';
@@ -65,6 +67,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
 }) => {
   const [updating, setUpdating] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
+  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
 
   if (!order) return null;
 
@@ -175,25 +178,63 @@ ${itemsList}
           </h3>
           <div className="border border-[#e5e5e5] bg-[#f5f5f5] divide-y divide-[#e5e5e5]">
             {order.items.map((item, idx) => (
-              <div key={idx} className="p-3 flex justify-between items-center text-xs">
-                <div>
-                  <h5 className="font-bold text-[#111111]">{item.name}</h5>
-                  <p className="text-[#707072]">
-                    Talle: <strong className="text-[#111111]">{item.size}</strong> • Cantidad: <strong className="text-[#111111]">{item.qty}</strong>
-                    {item.appliedPriceType && (
-                      <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                        item.appliedPriceType === 'wholesale'
-                          ? 'bg-[#007d48]/10 text-[#007d48]'
-                          : item.appliedPriceType === 'custom'
-                          ? 'bg-[#f59e0b]/10 text-[#f59e0b]'
-                          : 'bg-[#f5f5f5] text-[#707072]'
-                      }`}>
-                        {PRICE_TYPE_LABELS[item.appliedPriceType]}
-                      </span>
+              <div key={idx} className="p-3 flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-3 min-w-0">
+                  {/* Product Image Thumbnail */}
+                  <button
+                    type="button"
+                    onClick={() => item.image && setPreviewImage({ url: item.image, name: item.name })}
+                    disabled={!item.image}
+                    className={`relative w-12 h-12 sm:w-14 sm:h-14 bg-white border border-[#e5e5e5] shrink-0 overflow-hidden flex items-center justify-center group ${
+                      item.image
+                        ? 'cursor-zoom-in hover:border-[#111111] transition-all'
+                        : 'cursor-default'
+                    }`}
+                    title={item.image ? 'Ampliar foto del producto' : undefined}
+                  >
+                    {item.image ? (
+                      <>
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          fill
+                          sizes="(max-width: 640px) 48px, 56px"
+                          className="object-cover object-center group-hover:scale-105 transition-transform duration-200"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                          <ZoomIn className="w-4 h-4 text-white drop-shadow-md" />
+                        </div>
+                      </>
+                    ) : (
+                      <ShoppingBag className="w-5 h-5 text-[#707072]" />
                     )}
-                  </p>
+                  </button>
+
+                  {/* Product Info */}
+                  <div className="min-w-0">
+                    <h5 className="font-bold text-[#111111] truncate">{item.name}</h5>
+                    <p className="text-[#707072] mt-0.5">
+                      Talle: <strong className="text-[#111111]">{item.size}</strong> • Cantidad:{' '}
+                      <strong className="text-[#111111]">{item.qty}</strong>
+                      {item.appliedPriceType && (
+                        <span
+                          className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                            item.appliedPriceType === 'wholesale'
+                              ? 'bg-[#007d48]/10 text-[#007d48]'
+                              : item.appliedPriceType === 'custom'
+                              ? 'bg-[#f59e0b]/10 text-[#f59e0b]'
+                              : 'bg-[#f5f5f5] text-[#707072]'
+                          }`}
+                        >
+                          {PRICE_TYPE_LABELS[item.appliedPriceType]}
+                        </span>
+                      )}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right font-extrabold text-[#111111]">
+
+                {/* Subtotal & Unit Price */}
+                <div className="text-right font-extrabold text-[#111111] shrink-0">
                   {formatPrice(item.subtotal)}
                   <span className="block text-[10px] font-medium text-[#707072]">
                     {formatPrice(item.unitPrice)} c/u
@@ -308,6 +349,43 @@ ${itemsList}
           </div>
         )}
       </div>
+
+      {/* Image Preview Lightbox Modal */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="relative bg-white max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-[#e5e5e5] space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
+              <h4 className="font-extrabold text-sm uppercase text-[#111111] truncate pr-4">
+                {previewImage.name}
+              </h4>
+              <button
+                type="button"
+                onClick={() => setPreviewImage(null)}
+                className="p-1.5 text-[#111111] bg-[#f5f5f5] hover:bg-[#111111] hover:text-white rounded-full transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="relative w-full h-80 sm:h-96 bg-[#f5f5f5] border border-[#e5e5e5] overflow-hidden flex items-center justify-center">
+              <Image
+                src={previewImage.url}
+                alt={previewImage.name}
+                fill
+                sizes="(max-width: 768px) 100vw, 512px"
+                className="object-contain p-2"
+                priority
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

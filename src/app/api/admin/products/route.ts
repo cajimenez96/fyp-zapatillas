@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     let productQuery = Product.find(query)
       .populate('brandId', 'name')
       .populate('typeId', 'name')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1, _id: -1 });
 
     if (hasPagination) {
       const skip = (page - 1) * limit;

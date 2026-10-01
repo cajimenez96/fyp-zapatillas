@@ -16,6 +16,7 @@ export type PaymentMethodType = 'transferencia' | 'efectivo' | 'tarjeta' | 'otro
 export interface IOrderItem {
   productId: Types.ObjectId;
   name: string;
+  image?: string;
   size: number;
   qty: number;
   appliedPriceType: AppliedPriceType;
@@ -56,6 +57,10 @@ const OrderItemSchema = new Schema<IOrderItem>(
     name: {
       type: String,
       required: [true, 'El nombre del producto en el ítem es obligatorio'],
+    },
+    image: {
+      type: String,
+      default: '',
     },
     size: {
       type: Number,
